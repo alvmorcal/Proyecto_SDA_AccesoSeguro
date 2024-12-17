@@ -5,6 +5,7 @@ import numpy as np
 import os
 from werkzeug.utils import secure_filename
 from flask_bcrypt import Bcrypt
+import requests
 
 app = Flask(__name__)
 app.secret_key = 'clave_secreta_flask'
@@ -16,6 +17,19 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 ADMIN_USER = 'admin'
 ADMIN_PASSWORD = bcrypt.generate_password_hash('admin123').decode('utf-8')
+
+# Configuracion Telegram
+BOT_TOKEN = "7623844834:AAEh23cpLEIXKFJPcTwh-BCmsqZ6Cze6jew"
+CHAT_ID = "1882908107"
+
+# Enviar mensaje a Telegram
+def send_telegram_message(message):
+    url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
+    try:
+        requests.post(url, data={"chat_id": CHAT_ID, "text": message})
+        print("Notificacion enviada a Telegram.")
+    except Exception as e:
+        print(f"Error al enviar mensaje a Telegram: {e}")
 
 # Conectar a la base de datos
 def connect_db():
@@ -80,6 +94,7 @@ def add_user():
             try:
                 c.execute("INSERT INTO users (name, encoding) VALUES (?, ?)", (name, encoding.tobytes()))
                 conn.commit()
+                send_telegram_message(f"✅ Nuevo usuario registrado: {name}")
                 flash(f'Usuario "{name}" agregado correctamente.', 'success')
             except sqlite3.IntegrityError:
                 flash(f'El usuario "{name}" ya existe.', 'danger')
@@ -98,6 +113,7 @@ def delete_user(name):
     c.execute("DELETE FROM users WHERE name = ?", (name,))
     conn.commit()
     conn.close()
+    send_telegram_message(f"❌ Usuario eliminado: {name}")
     flash(f'Usuario "{name}" eliminado correctamente.', 'success')
     return redirect(url_for('dashboard'))
 
@@ -118,3 +134,4 @@ if __name__ == '__main__':
     if not os.path.exists(UPLOAD_FOLDER):
         os.makedirs(UPLOAD_FOLDER)
     app.run(debug=True, host='0.0.0.0', port=5000)
+

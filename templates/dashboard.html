@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container mt-5">
+        <h1 class="text-center text-primary">Usuarios Registrados</h1>
+        <table class="table table-striped table-bordered mt-4">
+            <tr>
+                <th>Nombre</th>
+                <th>Acciones</th>
+            </tr>
+            {% for user in users %}
+            <tr>
+                <td>{{ user['name'] }}</td>
+                <td>
+                    <a href="/delete_user/{{ user['name'] }}" class="btn btn-danger btn-sm">Eliminar</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </table>
+        <a href="/add_user" class="btn btn-success">Agregar Usuario</a>
+        <a href="/logout" class="btn btn-secondary">Cerrar Sesión</a>
+    </div>
+</body>
+</html>

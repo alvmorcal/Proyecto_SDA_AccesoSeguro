@@ -12,6 +12,7 @@ BOT_TOKEN = "7623844834:AAEh23cpLEIXKFJPcTwh-BCmsqZ6Cze6jew"
 CHAT_ID = "1882908107"
 RESOLUTION = (640, 480)
 TOLERANCE = 0.6
+REFRESH_INTERVAL = 10  # Intervalo de tiempo para refrescar usuarios (en segundos)
 
 # --- FUNCIONES DE TELEGRAM ---
 def send_telegram_message(message):
@@ -81,11 +82,19 @@ def draw_results(frame, results):
     return frame
 
 # --- RECONOCIMIENTO PRINCIPAL ---
-def recognize_faces(camera, users):
+def recognize_faces(camera):
     print("Iniciando reconocimiento facial. Presiona 'O' para interactuar o 'Q' para salir.")
     sleep(2)
+    users = load_users_from_database()
+    last_refresh = 0
 
     while True:
+        # Refrescar usuarios cada REFRESH_INTERVAL segundos
+        if (sleep(0) or (time := int(cv2.getTickCount() / cv2.getTickFrequency()))) - last_refresh >= REFRESH_INTERVAL:
+            users = load_users_from_database()
+            last_refresh = time
+            print("Usuarios actualizados desde la base de datos.")
+
         frame = camera.capture_array()
         results = process_frame(frame, users)
         frame = draw_results(frame, results)
@@ -111,19 +120,15 @@ def recognize_faces(camera, users):
 
 # --- EJECUCION PRINCIPAL ---
 if __name__ == "__main__":
-    users = load_users_from_database()
-    if not users:
-        print("No hay usuarios registrados en la base de datos.")
-        exit()
-
     camera = initialize_camera()
     camera.start()
     try:
-        recognize_faces(camera, users)
+        recognize_faces(camera)
     except Exception as e:
         print(f"Error durante el reconocimiento: {e}")
     finally:
         camera.stop()
         camera.close()
         print("Camara apagada.")
+
 

@@ -57,13 +57,6 @@
             right: 20px;
             z-index: 1055;
         }
-        .toast {
-            background-color: #FF5C5C; /* Fondo rojo de la notificación */
-            color: #FFFFFF; /* Texto blanco */
-        }
-        .toast-success {
-            background-color: #28a745; /* Fondo verde para éxito */
-        }
     </style>
 </head>
 <body>
@@ -85,7 +78,7 @@
         {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
             {% for category, message in messages %}
-                <div class="toast align-items-center text-white border-0 {{ 'toast-success' if category == 'success' else '' }}" role="alert" aria-live="assertive" aria-atomic="true">
+                <div class="toast align-items-center text-white bg-{{ 'success' if category == 'success' else 'danger' }} border-0" role="alert" aria-live="assertive" aria-atomic="true">
                     <div class="d-flex">
                         <div class="toast-body">
                             {{ message }}
@@ -108,6 +101,7 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
+
 
 
 

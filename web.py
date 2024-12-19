@@ -169,6 +169,7 @@ def delete_user_confirm():
 
     return redirect(url_for('dashboard'))
 
+
 @app.route('/logout')
 def logout():
     session['logged_in'] = False

@@ -16,7 +16,7 @@ if __name__ == "__main__":
 
     # Iniciar procesos
     web.start()
-   reconocer_usuarios.start()
+    reconocer_usuarios.start()
 
     # Esperar a que terminen los procesos
     web.join()

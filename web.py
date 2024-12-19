@@ -69,10 +69,10 @@ def login():
         password = request.form['password']
         if username == ADMIN_USER and bcrypt.check_password_hash(ADMIN_PASSWORD, password):
             session['logged_in'] = True
-            #flash('Inicio de sesión exitoso.', 'success')
+            flash('Inicio de sesión exitoso.', 'success')
             return redirect(url_for('dashboard'))
-        #else:
-            #flash('Usuario o contraseña incorrectos.', 'danger')
+        else:
+            flash('Usuario o contraseña incorrectos.', 'danger')
     return render_template('login.html')
 
 @app.route('/dashboard')

@@ -8,8 +8,8 @@
     <style>
         body {
             font-family: 'SF Pro Display', sans-serif;
-            background: linear-gradient(180deg, #021024, #052659, #6483B3); /* Gradiente principal */
-            color: #C1E8FF; /* Texto claro */
+            background: linear-gradient(180deg, #021024, #052659, #6483B3);
+            color: #C1E8FF;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -17,39 +17,39 @@
             margin: 0;
         }
         .card {
-            background-color: #052659; /* Fondo azul oscuro de la tarjeta */
+            background-color: #052659;
             padding: 30px;
             border-radius: 12px;
-            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.25); /* Sombra de la tarjeta */
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.25);
             width: 100%;
             max-width: 400px;
         }
         .card h1 {
             font-size: 1.8rem;
             font-weight: 700;
-            color: #C1E8FF; /* Color del título */
+            color: #C1E8FF;
             text-align: center;
             margin-bottom: 20px;
         }
         .form-control {
-            background-color: #FFFFFF; /* Fondo blanco del campo */
-            border: 1px solid #7DA0CA; /* Borde azul suave */
-            color: #021024; /* Texto oscuro */
+            background-color: #FFFFFF;
+            border: 1px solid #7DA0CA;
+            color: #021024;
         }
         .form-control:focus {
-            background-color: #FFFFFF; /* Fondo blanco al hacer foco */
-            color: #021024; /* Texto oscuro */
-            border-color: #6483B3; /* Borde azul más oscuro al hacer foco */
+            background-color: #FFFFFF;
+            color: #021024;
+            border-color: #6483B3;
             box-shadow: none;
         }
         .btn-primary {
-            background-color: #7DA0CA; /* Fondo azul suave del botón */
+            background-color: #7DA0CA;
             border: none;
-            color: #021024; /* Texto oscuro */
+            color: #021024;
             font-weight: bold;
         }
         .btn-primary:hover {
-            background-color: #6483B3; /* Fondo azul más oscuro al pasar el cursor */
+            background-color: #6483B3;
         }
         .toast-container {
             position: fixed;
@@ -92,7 +92,6 @@
     </div>
 
     <script>
-        // Inicializar todas las notificaciones (toasts)
         document.querySelectorAll('.toast').forEach(toastNode => {
             const toast = new bootstrap.Toast(toastNode);
             toast.show();

@@ -12,17 +12,19 @@ BOT_TOKEN = "7623844834:AAEh23cpLEIXKFJPcTwh-BCmsqZ6Cze6jew"
 CHAT_ID = "1882908107"
 RESOLUTION = (640, 480)
 TOLERANCE = 0.6
-REFRESH_INTERVAL = 10  # Intervalo de tiempo para refrescar usuarios (en segundos)
+REFRESH_INTERVAL = 30  # Intervalo de tiempo para refrescar usuarios (en segundos)
 
 # --- FUNCIONES DE TELEGRAM ---
 def send_telegram_message(message):
     url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
     try:
         response = requests.post(url, data={"chat_id": CHAT_ID, "text": message})
+        """
         if response.status_code == 200:
             print("Notificacion enviada por Telegram.")
         else:
             print("Error al enviar la notificacion.")
+        """
     except Exception as e:
         print(f"Error en send_telegram_message: {e}")
 
@@ -31,10 +33,12 @@ def send_telegram_photo(frame, caption):
     try:
         _, buffer = cv2.imencode('.jpg', frame)
         response = requests.post(url, files={"photo": buffer.tobytes()}, data={"chat_id": CHAT_ID, "caption": caption})
+        """
         if response.status_code == 200:
             print("Imagen enviada por Telegram.")
         else:
             print("Error al enviar la imagen.")
+        """
     except Exception as e:
         print(f"Error en send_telegram_photo: {e}")
 
@@ -105,15 +109,15 @@ def recognize_faces(camera):
         key = cv2.waitKey(1) & 0xFF
         if key == ord('o'):
             if known_user:
-                print(f"Acceso permitido para {known_user}.")
-                send_telegram_message(f"✅ Acceso permitido: {known_user} ha abierto la puerta.")
+                # print(f"Acceso permitido para {known_user}.")
+                send_telegram_message(f"✅ Acceso permitido: {known_user} ha abierto la caja fuerte.")
             else:
-                print("Alarma activada: Persona desconocida detectada.")
-                send_telegram_message("🚨 ALERTA: Persona desconocida detectada.")
-                send_telegram_photo(frame, "Persona desconocida detectada")
+                # print("Alarma activada: Persona desconocida detectada.")
+                send_telegram_message("🚨 ALERTA: Un desconocido intentó acceder a la caja fuerte.")
+                send_telegram_photo(frame, "Persona no autorizada")
             break
         elif key == ord('q'):
-            print("Reconocimiento detenido por el usuario.")
+            # print("Reconocimiento detenido por el usuario.")
             break
 
     cv2.destroyAllWindows()
@@ -129,6 +133,3 @@ if __name__ == "__main__":
     finally:
         camera.stop()
         camera.close()
-        print("Camara apagada.")
-
-

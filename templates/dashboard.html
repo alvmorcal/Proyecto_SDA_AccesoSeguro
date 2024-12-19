@@ -8,8 +8,8 @@
     <style>
         body {
             font-family: 'SF Pro Display', sans-serif;
-            background: linear-gradient(180deg, #021024, #052659, #6483B3); /* Gradiente principal */
-            color: #C1E8FF; /* Texto claro */
+            background: linear-gradient(180deg, #021024, #052659, #6483B3);
+            color: #C1E8FF;
             min-height: 100vh;
             margin: 0;
             display: flex;
@@ -17,84 +17,49 @@
             align-items: center;
         }
         .container {
-            background-color: #052659; /* Fondo del contenedor */
+            background-color: #052659;
             padding: 30px;
             border-radius: 12px;
-            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.25); /* Sombra del contenedor */
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.25);
             max-width: 800px;
             width: 100%;
         }
         h1 {
-            color: #C1E8FF; /* Color del título Usuarios Registrados */
+            color: #C1E8FF;
             text-align: center;
         }
         table {
-            background-color: #F9F9F9; /* Fondo blanco de la tabla */
+            background-color: #F9F9F9;
             border-radius: 8px;
             overflow: hidden;
         }
         th {
-            background-color: #052659; /* Fondo azul oscuro de los encabezados */
-            color: #C1E8FF; /* Texto claro de los encabezados */
+            background-color: #052659;
+            color: #C1E8FF;
         }
         td, th {
-            text-align: center; /* Texto centrado en las celdas */
+            text-align: center;
         }
         .btn-success {
-            background-color: #7DA0CA; /* Fondo azul suave del botón */
+            background-color: #7DA0CA;
             border: none;
-            color: #021024; /* Texto oscuro */
+            color: #021024;
             font-weight: bold;
         }
         .btn-success:hover {
-            background-color: #6483B3; /* Fondo azul más oscuro al pasar el cursor */
+            background-color: #6483B3;
         }
         .btn-secondary {
-            background-color: #B0B0B0; /* Fondo gris del botón de cerrar sesión */
+            background-color: #B0B0B0;
             border: none;
-            color: #FFFFFF; /* Texto blanco */
+            color: #FFFFFF;
         }
         .btn-danger {
-            background-color: #FF5C5C; /* Fondo rojo del botón de eliminar */
+            background-color: #FF5C5C;
             border: none;
         }
         .btn-danger:hover {
-            background-color: #FF3A3A; /* Fondo rojo más oscuro al pasar el cursor */
-        }
-        .modal-content {
-            background-color: #FFFFFF; /* Fondo blanco del modal */
-            color: #021024; /* Texto oscuro */
-            border-radius: 12px;
-            border: 1px solid #7DA0CA;
-        }
-        .modal-header h5 {
-            color: #052659; /* Azul oscuro del título del modal */
-        }
-        .modal-body p.text-danger {
-            color: #FF5C5C; /* Texto de advertencia en rojo */
-            font-weight: bold;
-            margin-bottom: 8px;
-        }
-        .form-control {
-            background-color: #FFFFFF; /* Fondo blanco del campo de entrada */
-            border: 1px solid #7DA0CA; /* Borde azul suave */
-            color: #021024; /* Texto oscuro */
-        }
-        .form-control:focus {
-            background-color: #FFFFFF; /* Fondo blanco al hacer foco */
-            color: #021024; /* Texto oscuro */
-            border-color: #6483B3; /* Borde azul más oscuro al hacer foco */
-            box-shadow: none;
-        }
-        .toast-container {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            z-index: 1055;
-        }
-        .toast {
-            background-color: #FF5C5C; /* Fondo rojo de la notificación */
-            color: #FFFFFF; /* Texto blanco */
+            background-color: #FF3A3A;
         }
     </style>
 </head>
@@ -115,7 +80,10 @@
                     <td>{{ user['name'] }}</td>
                     <td>{{ user['email'] }}</td>
                     <td>
-                        <button class="btn btn-danger btn-sm" onclick="confirmDelete('{{ user['name'] }}')">Eliminar</button>
+                        <form action="/delete_user_confirm" method="POST" style="display:inline;">
+                            <input type="hidden" name="username" value="{{ user['name'] }}">
+                            <button type="submit" class="btn btn-danger btn-sm">Eliminar</button>
+                        </form>
                     </td>
                 </tr>
                 {% endfor %}
@@ -124,87 +92,10 @@
         <a href="/add_user" class="btn btn-success">Agregar Usuario</a>
         <a href="/logout" class="btn btn-secondary">Cerrar Sesión</a>
     </div>
-
-    <!-- Modal -->
-    <div class="modal fade" id="confirmDeleteModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog">
-            <form id="deleteForm" onsubmit="handleDelete(event)">
-                <input type="hidden" name="username" id="usernameToDelete">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title">Confirmar Eliminación</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                    </div>
-                    <div class="modal-body">
-                        <p class="text-danger">La eliminación de usuarios es irreversible.</p>
-                        <p>Ingrese la clave de administrador para confirmar la eliminación del usuario:</p>
-                        <input type="password" name="admin_password" id="adminPassword" class="form-control" placeholder="Clave de administrador" required>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                        <button type="submit" class="btn btn-danger">Eliminar</button>
-                    </div>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Toast Notification -->
-    <div class="toast-container" id="toastContainer"></div>
-
-    <script>
-        function confirmDelete(username) {
-            document.getElementById('usernameToDelete').value = username;
-            var modal = new bootstrap.Modal(document.getElementById('confirmDeleteModal'));
-            modal.show();
-        }
-
-        function handleDelete(event) {
-            event.preventDefault();
-
-            const password = document.getElementById('adminPassword').value;
-            const username = document.getElementById('usernameToDelete').value;
-
-            // Simulación de validación de contraseña
-            if (password !== "admin123") { // Cambia esta lógica con la validación real
-                showToast("Contraseña incorrecta. Inténtalo de nuevo.");
-                return;
-            }
-
-            // Eliminar el usuario
-            document.getElementById('userTableBody').querySelectorAll('tr').forEach(row => {
-                if (row.cells[0].innerText === username) {
-                    row.remove();
-                }
-            });
-
-            // Mostrar notificación y cerrar modal
-            showToast("Usuario eliminado correctamente.", "success");
-            const modal = bootstrap.Modal.getInstance(document.getElementById('confirmDeleteModal'));
-            modal.hide();
-        }
-
-        function showToast(message, type = "error") {
-            const toastContainer = document.getElementById('toastContainer');
-            const toast = document.createElement('div');
-            toast.className = `toast align-items-center text-white border-0 ${type === "success" ? "bg-success" : "bg-danger"}`;
-            toast.innerHTML = `
-                <div class="d-flex">
-                    <div class="toast-body">${message}</div>
-                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
-                </div>
-            `;
-            toastContainer.appendChild(toast);
-
-            const bsToast = new bootstrap.Toast(toast);
-            bsToast.show();
-
-            setTimeout(() => toast.remove(), 5000);
-        }
-    </script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
+
 
 
 

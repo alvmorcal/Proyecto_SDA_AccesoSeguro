@@ -71,9 +71,11 @@ def dashboard():
 def add_user():
     if not session.get('logged_in'):
         return redirect(url_for('login'))
+
     if request.method == 'POST':
         name = request.form['name']
         file = request.files['file']
+
         if not name or not file or not allowed_file(file.filename):
             flash('Debe ingresar un nombre y una imagen válida.', 'danger')
             return redirect(url_for('add_user'))
@@ -91,16 +93,41 @@ def add_user():
             encoding = face_encodings[0]
             conn = connect_db()
             c = conn.cursor()
+
+            # Verificar si el encoding ya existe
+            c.execute("SELECT name, encoding FROM users")
+            users = c.fetchall()
+
+            for user in users:
+                existing_encoding = np.frombuffer(user[1], dtype=np.float64)
+                match = face_recognition.compare_faces([existing_encoding], encoding, tolerance=0.6)
+                if match[0]:
+                    flash(f"El usuario ya existe con el nombre: {user[0]}", "danger")
+                    conn.close()
+                    os.remove(filepath)
+                    return redirect(url_for('add_user'))
+
+            # Generar un nombre único
+            existing_names = [user[0] for user in users]
+            unique_name = name
+            counter = 1
+            while unique_name in existing_names:
+                unique_name = f"{name}_{str(counter).zfill(3)}"
+                counter += 1
+
             try:
-                c.execute("INSERT INTO users (name, encoding) VALUES (?, ?)", (name, encoding.tobytes()))
+                c.execute("INSERT INTO users (name, encoding) VALUES (?, ?)", (unique_name, encoding.tobytes()))
                 conn.commit()
-                send_telegram_message(f"✅ Nuevo usuario registrado: {name}")
-                flash(f'Usuario "{name}" agregado correctamente.', 'success')
+                send_telegram_message(f"? Nuevo usuario registrado: {unique_name}")
+                flash(f'Usuario "{unique_name}" agregado correctamente.', 'success')
             except sqlite3.IntegrityError:
-                flash(f'El usuario "{name}" ya existe.', 'danger')
-            conn.close()
+                flash(f'Error al registrar el usuario "{unique_name}".', 'danger')
+            finally:
+                conn.close()
+        
         os.remove(filepath)
         return redirect(url_for('dashboard'))
+
     return render_template('add_user.html')
 
 # --- Eliminar Usuario ---

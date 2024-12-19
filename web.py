@@ -163,11 +163,9 @@ def delete_user_confirm():
         conn.commit()
         conn.close()
         send_telegram_message(f"❌ Usuario eliminado: {username}")
-        flash(f'Usuario "{username}" eliminado correctamente.', 'success')
+        return {"status": "success", "message": f'Usuario "{username}" eliminado correctamente.'}, 200
     else:
-        flash("Clave de administrador incorrecta.", 'danger')
-
-    return redirect(url_for('dashboard'))
+        return {"status": "error", "message": "Clave de administrador incorrecta."}, 401
 
 
 @app.route('/logout')

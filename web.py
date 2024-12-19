@@ -157,13 +157,17 @@ def delete_user_confirm():
     admin_password = request.form['admin_password']
 
     if bcrypt.check_password_hash(ADMIN_PASSWORD, admin_password):
-        conn = connect_db()
-        c = conn.cursor()
-        c.execute("DELETE FROM users WHERE name = ?", (username,))
-        conn.commit()
-        conn.close()
-        send_telegram_message(f"❌ Usuario eliminado: {username}")
-        flash(f'Usuario "{username}" eliminado correctamente.', 'success')
+        try:
+            conn = connect_db()
+            c = conn.cursor()
+            c.execute("DELETE FROM users WHERE name = ?", (username,))
+            conn.commit()
+            conn.close()
+            send_telegram_message(f"❌ Usuario eliminado: {username}")
+            flash(f'Usuario "{username}" eliminado correctamente.', 'success')
+        except sqlite3.Error as e:
+            flash(f'Error al eliminar al usuario "{username}".', 'danger')
+            print(f"Error eliminando usuario: {e}")
     else:
         flash("Clave de administrador incorrecta.", 'danger')
 

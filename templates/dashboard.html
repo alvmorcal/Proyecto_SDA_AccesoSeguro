@@ -21,9 +21,12 @@
             padding: 30px;
             border-radius: 12px;
             box-shadow: 0 8px 16px rgba(0, 0, 0, 0.25); /* Sombra del contenedor */
-            color: #021024; /* Texto oscuro */
             max-width: 800px;
             width: 100%;
+        }
+        h1 {
+            color: #C1E8FF; /* Color del título Usuarios Registrados */
+            text-align: center;
         }
         table {
             background-color: #F9F9F9; /* Fondo blanco de la tabla */
@@ -58,11 +61,39 @@
         .btn-danger:hover {
             background-color: #FF3A3A; /* Fondo rojo más oscuro al pasar el cursor */
         }
+        .modal-content {
+            background-color: #FFFFFF; /* Fondo blanco del modal */
+            color: #021024; /* Texto oscuro */
+            border-radius: 12px;
+            border: 1px solid #7DA0CA;
+        }
+        .modal-header h5 {
+            color: #052659; /* Azul oscuro del título del modal */
+        }
+        .modal-body p.text-danger {
+            color: #FF5C5C; /* Texto de advertencia en rojo */
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+        .modal-body p.text-info {
+            color: #052659; /* Texto azul oscuro */
+        }
+        .form-control {
+            background-color: #FFFFFF; /* Fondo blanco del campo de entrada */
+            border: 1px solid #7DA0CA; /* Borde azul suave */
+            color: #021024; /* Texto oscuro */
+        }
+        .form-control:focus {
+            background-color: #FFFFFF; /* Fondo blanco al hacer foco */
+            color: #021024; /* Texto oscuro */
+            border-color: #6483B3; /* Borde azul más oscuro al hacer foco */
+            box-shadow: none;
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1 class="text-center">Usuarios Registrados</h1>
+        <h1>Usuarios Registrados</h1>
         <table class="table table-striped table-bordered mt-4">
             <thead>
                 <tr>
@@ -86,6 +117,29 @@
         <a href="/add_user" class="btn btn-success">Agregar Usuario</a>
         <a href="/logout" class="btn btn-secondary">Cerrar Sesión</a>
     </div>
+    <!-- Modal -->
+    <div class="modal fade" id="confirmDeleteModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <form method="POST" action="/delete_user_confirm">
+                <input type="hidden" name="username" id="usernameToDelete">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Confirmar Eliminación</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p class="text-danger">La eliminación de usuarios es irreversible.</p>
+                        <p class="text-info">Ingrese la clave de administrador para confirmar la eliminación del usuario:</p>
+                        <input type="password" name="admin_password" class="form-control" placeholder="Clave de administrador" required>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-danger">Eliminar</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
     <script>
         function confirmDelete(username) {
             document.getElementById('usernameToDelete').value = username;
@@ -96,6 +150,7 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
+
 
 
 

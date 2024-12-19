@@ -27,7 +27,7 @@ def send_telegram_message(message):
     url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
     try:
         requests.post(url, data={"chat_id": CHAT_ID, "text": message})
-        print("Notificacion enviada a Telegram.")
+        # print("Notificacion enviada a Telegram.")
     except Exception as e:
         print(f"Error al enviar mensaje a Telegram: {e}")
 
@@ -118,7 +118,7 @@ def add_user():
             try:
                 c.execute("INSERT INTO users (name, encoding) VALUES (?, ?)", (unique_name, encoding.tobytes()))
                 conn.commit()
-                send_telegram_message(f"? Nuevo usuario registrado: {unique_name}")
+                send_telegram_message(f"👤 Usuario registrado en la base de datos: {unique_name}")
                 flash(f'Usuario "{unique_name}" agregado correctamente.', 'success')
             except sqlite3.IntegrityError:
                 flash(f'Error al registrar el usuario "{unique_name}".', 'danger')
@@ -140,7 +140,7 @@ def delete_user(name):
     c.execute("DELETE FROM users WHERE name = ?", (name,))
     conn.commit()
     conn.close()
-    send_telegram_message(f"❌ Usuario eliminado: {name}")
+    send_telegram_message(f"❌ Usuario eliminado de la base de datos: {name}")
     flash(f'Usuario "{name}" eliminado correctamente.', 'success')
     return redirect(url_for('dashboard'))
 

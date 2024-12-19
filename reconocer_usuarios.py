@@ -55,7 +55,7 @@ def load_users_from_database():
 def initialize_camera():
     camera = Picamera2()
     config = camera.create_still_configuration(main={"size": RESOLUTION}, lores={"size": (320, 240)}, display="lores")
-    config['transform'] = libcamera.Transform(vflip=True)
+    #config['transform'] = libcamera.Transform(vflip=True)
     camera.configure(config)
     return camera
 

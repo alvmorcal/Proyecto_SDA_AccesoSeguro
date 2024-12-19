@@ -12,7 +12,7 @@ def run_caja():
 if __name__ == "__main__":
     # Crear procesos
     web = multiprocessing.Process(target=run_web)
-    reconocer_usuarios = multiprocessing.Process(target=run_caja)
+    caja = multiprocessing.Process(target=run_caja)
 
     # Iniciar procesos
     web.start()

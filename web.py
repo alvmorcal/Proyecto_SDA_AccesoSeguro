@@ -71,7 +71,7 @@ def login():
             session['logged_in'] = True
             #flash('Inicio de sesión exitoso.', 'success')
             return redirect(url_for('dashboard'))
-        else:
+        #else:
             #flash('Usuario o contraseña incorrectos.', 'danger')
     return render_template('login.html')
 

@@ -38,6 +38,20 @@ def send_telegram_message(message):
     except Exception as e:
         print(f"Error al enviar mensaje a Telegram: {e}")
 
+# Enviar correo electrónico
+def send_email(to_email, subject, body):
+    try:
+        msg = MIMEText(body)
+        msg['Subject'] = subject
+        msg['From'] = SMTP_USER
+        msg['To'] = to_email
+        with smtplib.SMTP(SMTP_SERVER, SMTP_PORT) as server:
+            server.starttls()
+            server.login(SMTP_USER, SMTP_PASSWORD)
+            server.sendmail(SMTP_USER, to_email, msg.as_string())
+    except Exception as e:
+        print(f"Error al enviar el correo: {e}")
+
 # Conectar a la base de datos
 def connect_db():
     conn = sqlite3.connect('users.db')
@@ -108,12 +122,24 @@ def add_user():
                 os.remove(filepath)
                 return redirect(url_for('add_user'))
 
+            # Verificar duplicados por nombre
+            unique_name = name
+            counter = 1
+            while True:
+                c.execute("SELECT name FROM users WHERE name = ?", (unique_name,))
+                if not c.fetchone():
+                    break
+                unique_name = f"{name}_{str(counter).zfill(3)}"
+                counter += 1
+
             try:
-                c.execute("INSERT INTO users (name, email, encoding) VALUES (?, ?, ?)", (name, email, encoding.tobytes()))
+                c.execute("INSERT INTO users (name, email, encoding) VALUES (?, ?, ?)", (unique_name, email, encoding.tobytes()))
                 conn.commit()
-                flash(f'Usuario "{name}" agregado correctamente.', 'success')
-            except sqlite3.Error as e:
-                flash(f'Error al registrar el usuario: {e}', 'danger')
+                send_telegram_message(f"👤 Usuario registrado: {unique_name}")
+                send_email(email, "Confirmación de Registro", f"Hola {unique_name}, tu registro ha sido exitoso.")
+                flash(f'Usuario "{unique_name}" agregado correctamente.', 'success')
+            except sqlite3.IntegrityError:
+                flash(f'Error al registrar el usuario "{unique_name}".', 'danger')
             finally:
                 conn.close()
 
@@ -131,15 +157,13 @@ def delete_user_confirm():
     admin_password = request.form['admin_password']
 
     if bcrypt.check_password_hash(ADMIN_PASSWORD, admin_password):
-        try:
-            conn = connect_db()
-            c = conn.cursor()
-            c.execute("DELETE FROM users WHERE name = ?", (username,))
-            conn.commit()
-            conn.close()
-            flash(f'Usuario "{username}" eliminado correctamente.', 'success')
-        except sqlite3.Error as e:
-            flash(f'Error al eliminar al usuario: {e}', 'danger')
+        conn = connect_db()
+        c = conn.cursor()
+        c.execute("DELETE FROM users WHERE name = ?", (username,))
+        conn.commit()
+        conn.close()
+        send_telegram_message(f"❌ Usuario eliminado: {username}")
+        flash(f'Usuario "{username}" eliminado correctamente.', 'success')
     else:
         flash("Clave de administrador incorrecta.", 'danger')
 
@@ -160,6 +184,7 @@ if __name__ == '__main__':
     if not os.path.exists(UPLOAD_FOLDER):
         os.makedirs(UPLOAD_FOLDER)
     app.run(debug=True, host='0.0.0.0', port=5000)
+
 
 
 

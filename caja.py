@@ -73,12 +73,12 @@ def set_led_state(led_rojo, led_verde, led_blanco):
         GPIO.output(LED_BLANCO, led_blanco)
 
 def desbloquear_servo():
-    servo.ChangeDutyCycle(7)  # Posición de desbloqueo
+    servo.ChangeDutyCycle(12)  # Posición de desbloqueo
     time.sleep(1)
     servo.ChangeDutyCycle(0)
 
 def bloquear_servo():
-    servo.ChangeDutyCycle(12)  # Posición de bloqueo
+    servo.ChangeDutyCycle(7)  # Posición de bloqueo
     time.sleep(1)
     servo.ChangeDutyCycle(0)
 

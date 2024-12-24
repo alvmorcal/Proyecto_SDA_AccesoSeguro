@@ -102,17 +102,15 @@ def process_camera(camera, users):
         matches = face_recognition.compare_faces([user[1] for user in users], face_encoding, tolerance=TOLERANCE)
         if True in matches:
             name = users[matches.index(True)][0]
-            return name
-    return None
+            return name, frame
+    return None, frame
 
 def inicializar_estado():
     if sensor_door_open():
-        print("Estado inicial: puerta abierta.")
         desbloquear_servo()
         set_led(False, LED_ROJO)
         set_led(True, LED_VERDE)
     else:
-        print("Estado inicial: puerta cerrada.")
         bloquear_servo()
         set_led(False, LED_VERDE)
         set_led(True, LED_ROJO)
@@ -122,25 +120,22 @@ def reconocimiento_facial(camera):
     global users
     while True:
         if detectar_presencia():
-            print("Presencia detectada. Iniciando reconocimiento facial.")
-            known_user = process_camera(camera, users)
+            known_user, frame = process_camera(camera, users)
             if known_user:
-                print(f"Usuario reconocido: {known_user}")
-                set_led(True, LED_BLANCO)  # Indicar acceso reconocido
+                set_led(True, LED_BLANCO)
                 send_telegram_message(f"✅ Usuario reconocido: {known_user}")
             else:
-                print("Persona desconocida detectada.")
-                set_led(False, LED_BLANCO)  # Indicar acceso no reconocido
+                set_led(False, LED_BLANCO)
                 send_telegram_message("🚨 ALERTA: Persona desconocida detectada.")
+                send_telegram_photo(frame, "Persona desconocida detectada")
         else:
-            print("No hay presencia detectada.")
-            time.sleep(0.1)  # Reducir uso de CPU cuando no hay presencia
+            set_led(False, LED_BLANCO)
+        time.sleep(0.1)
 
 def monitoreo_boton():
     while True:
         if button_pressed():
             if GPIO.input(LED_BLANCO):  # Si el LED blanco está encendido
-                print("Acceso permitido.")
                 desbloquear_servo()
                 set_led(False, LED_ROJO)
                 set_led(True, LED_VERDE)
@@ -149,41 +144,36 @@ def monitoreo_boton():
                 start_time = time.time()
                 while time.time() - start_time < DOOR_UNLOCK_TIME:
                     if sensor_door_open():
-                        print("Puerta abierta.")
+                        send_telegram_message("✅ Caja abierta.")
                         while sensor_door_open():
                             time.sleep(0.1)
-                        print("Puerta cerrada, bloqueando automáticamente.")
                         time.sleep(DOOR_AUTO_LOCK_TIME)
                         bloquear_servo()
                         set_led(True, LED_ROJO)
                         set_led(False, LED_VERDE)
+                        send_telegram_message("🔒 Caja bloqueada automáticamente.")
                         return
 
-                print("Tiempo agotado. Bloqueando nuevamente.")
                 bloquear_servo()
                 set_led(True, LED_ROJO)
                 set_led(False, LED_VERDE)
+                send_telegram_message("🔒 Caja bloqueada automáticamente por tiempo.")
             else:
-                print("Intento no autorizado. Activando alarma.")
                 activate_buzzer()
-                send_telegram_message("🚨 ALERTA: Persona desconocida detectada.")
+                send_telegram_message("🚨 Intento no autorizado.")
 
 def verificar_puerta():
     while True:
         if sensor_door_open():
-            print("Puerta abierta.")
-            while sensor_door_open():
-                time.sleep(0.1)
-            print("Puerta cerrada, bloqueando automáticamente.")
             time.sleep(DOOR_AUTO_LOCK_TIME)
             bloquear_servo()
             set_led(True, LED_ROJO)
+            send_telegram_message("🔒 Caja bloqueada automáticamente al cerrar.")
 
 def actualizar_usuarios_periodicamente():
     global users
     while True:
         users = get_users_from_database()
-        print("Base de datos actualizada.")
         time.sleep(10)  # Actualizar cada 10 segundos
 
 # --- Programa Principal ---
@@ -216,6 +206,7 @@ if __name__ == "__main__":
     hilo_boton.join()
     hilo_puerta.join()
     hilo_actualizacion.join()
+
 
 
 

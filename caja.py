@@ -20,7 +20,7 @@ LED_BLANCO = 22
 SENSOR_MAGNETICO = 5
 
 # Configuración global
-BOT_TOKEN = "7623844834:AAEh23cpLEIXKFJPcTwh-BCmsqZ6jew"
+BOT_TOKEN = "7623844834:AAEh23cpLEIXKFJPcTwh-BCmsqZ6Cze6jew"
 CHAT_ID = "1882908107"
 TOLERANCE = 0.6
 DOOR_UNLOCK_TIME = 5  # Tiempo para mantener la puerta desbloqueada tras pulsación válida (segundos)

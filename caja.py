@@ -25,6 +25,9 @@ TOLERANCE = 0.6
 DOOR_UNLOCK_TIME = 5  # Tiempo para mantener la puerta desbloqueada tras pulsación válida (segundos)
 DOOR_AUTO_LOCK_TIME = 2  # Tiempo para bloquear automáticamente tras cerrar la puerta (segundos)
 
+# Estado inicial de la puerta
+door_locked = False
+
 # Protección de LEDs
 led_lock = threading.Lock()
 door_lock = threading.Lock()
@@ -239,6 +242,7 @@ if __name__ == "__main__":
     except KeyboardInterrupt:
         print("Finalizando programa.")
         GPIO.cleanup()
+
 
 
 

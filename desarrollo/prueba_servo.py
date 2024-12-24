@@ -11,8 +11,8 @@ GPIO.setup(SERVO_PIN, GPIO.OUT)
 servo = GPIO.PWM(SERVO_PIN, 50)
 servo.start(0)
 
-POSICION_ABIERTA = 7  # Duty cycle para abrir
-POSICION_CERRADA = 12  # Duty cycle para cerrar
+POSICION_ABIERTA = 12  # Duty cycle para abrir
+POSICION_CERRADA = 7  # Duty cycle para cerrar
 
 estado_actual = "cerrada"
 
@@ -38,3 +38,4 @@ except KeyboardInterrupt:
     print("Deteniendo programa.")
     servo.stop()
     GPIO.cleanup()
+

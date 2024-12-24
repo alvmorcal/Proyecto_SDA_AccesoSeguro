@@ -119,17 +119,7 @@ def inicializar_estado():
 def reconocimiento_facial(camera):
     global users
     while True:
-        if detectar_presencia():
-            known_user, frame = process_camera(camera, users)
-            if known_user:
-                set_led(True, LED_BLANCO)
-                send_telegram_message(f"✅ Usuario reconocido: {known_user}")
-            else:
-                set_led(False, LED_BLANCO)
-                send_telegram_message("🚨 ALERTA: Persona desconocida detectada.")
-                send_telegram_photo(frame, "Persona desconocida detectada")
-        else:
-            set_led(False, LED_BLANCO)
+        detectar_presencia()  # Detecta presencia pero no envía mensajes
         time.sleep(0.1)
 
 def monitoreo_boton():
@@ -209,6 +199,7 @@ if __name__ == "__main__":
     hilo_boton.join()
     hilo_puerta.join()
     hilo_actualizacion.join()
+
 
 
 

@@ -33,8 +33,8 @@ GPIO.setup(SENSOR_PRESENCIA, GPIO.IN)
 GPIO.setup(BUTTON_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 GPIO.setup(BUZZER_PIN, GPIO.OUT)
 GPIO.setup(SERVO_PIN, GPIO.OUT)
-GPIO.setup(LED_VERDE, GPIO.OUT)
 GPIO.setup(LED_ROJO, GPIO.OUT)
+GPIO.setup(LED_VERDE, GPIO.OUT)
 GPIO.setup(LED_BLANCO, GPIO.OUT)
 GPIO.setup(SENSOR_MAGNETICO, GPIO.IN)
 
@@ -57,10 +57,11 @@ def send_telegram_photo(frame, caption):
     except Exception as e:
         print(f"Error al enviar foto a Telegram: {e}")
 
-def set_led_state(led_rojo, led_verde):
+def set_led_state(led_rojo, led_verde, led_blanco):
     with led_lock:
         GPIO.output(LED_ROJO, led_rojo)
         GPIO.output(LED_VERDE, led_verde)
+        GPIO.output(LED_BLANCO, led_blanco)
 
 def desbloquear_servo():
     servo.ChangeDutyCycle(7)  # Posición de desbloqueo
@@ -119,13 +120,13 @@ def process_camera(camera, users):
     return None, frame
 
 def inicializar_estado():
-    set_led_state(False, False)  # Asegurar que ambos LEDs están apagados inicialmente
+    set_led_state(False, False, False)  # Asegurar que todos los LEDs están apagados inicialmente
     if sensor_door_open():
         desbloquear_servo()
-        set_led_state(False, True)  # Verde encendido
+        set_led_state(False, True, False)  # Verde encendido
     else:
         bloquear_servo()
-        set_led_state(True, False)  # Rojo encendido
+        set_led_state(True, False, False)  # Rojo encendido
 
 # --- Funciones de Control en Hilos ---
 door_locked = False
@@ -134,7 +135,13 @@ def reconocimiento_facial(camera):
     global users
     while True:
         if detectar_presencia():  # Solo si hay presencia estabilizada
-            pass  # Aquí iría la lógica de reconocimiento facial si fuese necesaria
+            name, frame = process_camera(camera, users)
+            if name:
+                set_led_state(False, False, True)  # Blanco encendido si se reconoce a una persona conocida
+            else:
+                set_led_state(False, False, False)  # Apagar el LED blanco si no se reconoce
+        else:
+            set_led_state(False, False, False)  # Apagar el LED blanco si no hay presencia
         time.sleep(0.1)
 
 def monitoreo_boton():
@@ -143,7 +150,7 @@ def monitoreo_boton():
         if button_pressed():
             if GPIO.input(LED_BLANCO):  # Si el LED blanco está encendido
                 desbloquear_servo()
-                set_led_state(False, True)  # Verde encendido, rojo apagado
+                set_led_state(False, True, False)  # Verde encendido, rojo apagado
                 send_telegram_message("✅ Acceso permitido: Usuario desbloqueó la caja.")
 
                 start_time = time.time()
@@ -154,13 +161,13 @@ def monitoreo_boton():
                             time.sleep(0.1)
                         time.sleep(DOOR_AUTO_LOCK_TIME)
                         bloquear_servo()
-                        set_led_state(True, False)  # Rojo encendido, verde apagado
+                        set_led_state(True, False, False)  # Rojo encendido, verde apagado
                         send_telegram_message("🔒 Caja bloqueada automáticamente.")
                         door_locked = True
                         return
 
                 bloquear_servo()
-                set_led_state(True, False)  # Rojo encendido, verde apagado
+                set_led_state(True, False, False)  # Rojo encendido, verde apagado
                 send_telegram_message("🔒 Caja bloqueada automáticamente por tiempo.")
                 door_locked = True
             else:
@@ -179,7 +186,7 @@ def verificar_puerta():
             if not door_locked:  # Solo bloquear si aún no está bloqueada
                 time.sleep(DOOR_AUTO_LOCK_TIME)
                 bloquear_servo()
-                set_led_state(True, False)  # Rojo encendido, verde apagado
+                set_led_state(True, False, False)  # Rojo encendido, verde apagado
                 send_telegram_message("🔒 Caja bloqueada automáticamente al cerrar.")
                 door_locked = True
         time.sleep(0.1)  # Reducir uso de CPU
@@ -220,6 +227,7 @@ if __name__ == "__main__":
     hilo_boton.join()
     hilo_puerta.join()
     hilo_actualizacion.join()
+
 
 
 

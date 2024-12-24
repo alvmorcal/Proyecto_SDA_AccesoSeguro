@@ -78,9 +78,9 @@ def send_telegram_photo(frame, caption):
 def set_led_state(led_rojo, led_verde, led_blanco):
     """Configura el estado de los LEDs de manera segura."""
     with led_lock:
-        GPIO.output(LED_ROJO, led_rojo)
-        GPIO.output(LED_VERDE, led_verde)
-        GPIO.output(LED_BLANCO, led_blanco)
+        if led_rojo!= None: GPIO.output(LED_ROJO, led_rojo)
+        if led_verde!= None: GPIO.output(LED_VERDE, led_verde)
+        if led_blanco!= None: GPIO.output(LED_BLANCO, led_blanco)
 
 def desbloquear_servo():
     """Desbloquea el servo motor."""

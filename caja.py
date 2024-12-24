@@ -7,8 +7,6 @@ import sqlite3
 import threading
 from picamera2 import Picamera2
 import requests
-import signal
-import sys
 
 # Configuración de pines GPIO
 SENSOR_PRESENCIA = 23
@@ -27,7 +25,6 @@ TOLERANCE = 0.6
 DOOR_UNLOCK_TIME = 10  # Tiempo para mantener la puerta desbloqueada tras pulsación válida (segundos)
 DOOR_AUTO_LOCK_TIME = 2  # Tiempo para bloquear automáticamente tras cerrar la puerta (segundos)
 
-# Configuración de GPIO
 GPIO.setmode(GPIO.BCM)
 GPIO.setup(SENSOR_PRESENCIA, GPIO.IN)
 GPIO.setup(BUTTON_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)
@@ -40,10 +37,6 @@ GPIO.setup(SENSOR_MAGNETICO, GPIO.IN)
 
 servo = GPIO.PWM(SERVO_PIN, 50)  # Configurar PWM para el servo
 servo.start(0)
-
-# Variables globales
-threads = []
-running = True
 
 # --- Funciones Auxiliares ---
 def send_telegram_message(message):
@@ -123,27 +116,26 @@ def inicializar_estado():
         bloquear_servo()
         set_led(False, LED_VERDE)
         set_led(True, LED_ROJO)
+        
 
 # --- Funciones de Control en Hilos ---
 def reconocimiento_facial(camera):
-    global running
     global users
-    while running:
+    while True:
         if detectar_presencia():
             known_user = process_camera(camera, users)
             if known_user:
-                #print(f"Usuario reconocido: {known_user}")
+                print(f"Usuario reconocido: {known_user}")
                 set_led(True, LED_BLANCO)
             else:
-                #print("Persona desconocida.")
+                print("Persona desconocida.")
                 set_led(False, LED_BLANCO)
 
 def monitoreo_boton():
-    global running
-    while running:
+    while True:
         if button_pressed():
             if GPIO.input(LED_BLANCO):  # Si el LED blanco está encendido
-                #print("Acceso permitido.")
+                print("Acceso permitido.")
                 desbloquear_servo()
                 set_led(False, LED_ROJO)
                 set_led(True, LED_VERDE)
@@ -158,10 +150,10 @@ def monitoreo_boton():
                         print("Puerta cerrada, bloqueando automáticamente.")
                         time.sleep(DOOR_AUTO_LOCK_TIME)
                         bloquear_servo()
-                        set_led(False, LED_VERDE)
                         set_led(True, LED_ROJO)
+                        set_led(False, LED_VERDE)
                         return
-                        
+
                 print("Tiempo agotado. Bloqueando nuevamente.")
                 bloquear_servo()
                 set_led(True, LED_ROJO)
@@ -172,8 +164,7 @@ def monitoreo_boton():
                 send_telegram_message("🚨 ALERTA: Persona desconocida detectada.")
 
 def verificar_puerta():
-    global running
-    while running:
+    while True:
         if sensor_door_open():
             print("Puerta abierta.")
             while sensor_door_open():
@@ -183,27 +174,16 @@ def verificar_puerta():
             bloquear_servo()
             set_led(True, LED_ROJO)
 
-def actualizar_usuarios_periodicamente():
-    global running
-    global users
-    while running:
-        users = get_users_from_database()
-        #print("Base de datos actualizada.")
-        time.sleep(10)  # Actualizar cada 10 segundos
 
-# --- Manejo de Señales para Salida Ordenada ---
-def cerrar_programa(signal, frame):
-    global running
-    print("\nCerrando programa...")
-    running = False
-    for t in threads:
-        t.join()
-    GPIO.cleanup()
-    sys.exit(0)
+def actualizar_usuarios_periodicamente():
+    global users
+    while True:
+        users = get_users_from_database()
+        print("Base de datos actualizada.")
+        time.sleep(10)  # Actualizar cada 10 segundos
 
 # --- Programa Principal ---
 if __name__ == "__main__":
-    signal.signal(signal.SIGINT, cerrar_programa)  # Manejo de Ctrl+C
     inicializar_estado()
 
     # Configurar cámara
@@ -216,20 +196,22 @@ if __name__ == "__main__":
     users = get_users_from_database()
 
     # Crear hilos
-    threads = [
-        threading.Thread(target=reconocimiento_facial, args=(camera,)),
-        threading.Thread(target=monitoreo_boton),
-        threading.Thread(target=verificar_puerta),
-        threading.Thread(target=actualizar_usuarios_periodicamente),
-    ]
+    hilo_reconocimiento = threading.Thread(target=reconocimiento_facial, args=(camera,))
+    hilo_boton = threading.Thread(target=monitoreo_boton)
+    hilo_puerta = threading.Thread(target=verificar_puerta)
+    hilo_actualizacion = threading.Thread(target=actualizar_usuarios_periodicamente)
 
     # Iniciar hilos
-    for t in threads:
-        t.start()
+    hilo_reconocimiento.start()
+    hilo_boton.start()
+    hilo_puerta.start()
+    hilo_actualizacion.start()
 
     # Mantener el programa corriendo
-    for t in threads:
-        t.join()
+    hilo_reconocimiento.join()
+    hilo_boton.join()
+    hilo_puerta.join()
+    hilo_actualizacion.join()
 
 
 

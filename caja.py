@@ -50,9 +50,6 @@ GPIO.setup(SENSOR_MAGNETICO, GPIO.IN)
 servo = GPIO.PWM(SERVO_PIN, 50)
 servo.start(0)
 
-# Estado de LEDs
-led_state = {"rojo": False, "verde": False, "blanco": False}
-
 def send_telegram_message(message):
     """Envía un mensaje de texto a Telegram."""
     if not BOT_TOKEN or not CHAT_ID:
@@ -81,9 +78,6 @@ def send_telegram_photo(frame, caption):
 def set_led_state(led_rojo, led_verde, led_blanco):
     """Configura el estado de los LEDs de manera segura."""
     with led_lock:
-        led_state["rojo"] = led_rojo
-        led_state["verde"] = led_verde
-        led_state["blanco"] = led_blanco
         GPIO.output(LED_ROJO, led_rojo)
         GPIO.output(LED_VERDE, led_verde)
         GPIO.output(LED_BLANCO, led_blanco)

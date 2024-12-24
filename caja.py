@@ -137,11 +137,11 @@ def reconocimiento_facial(camera):
         if detectar_presencia():  # Solo si hay presencia estabilizada
             name, frame = process_camera(camera, users)
             if name:
-                set_led_state(False, False, True)  # Blanco encendido si se reconoce a una persona conocida
+                set_led_state(False, GPIO.input(LED_VERDE), True)  # Blanco encendido si se reconoce a una persona conocida
             else:
-                set_led_state(False, False, False)  # Apagar el LED blanco si no se reconoce
+                set_led_state(GPIO.input(LED_ROJO), GPIO.input(LED_VERDE), False)  # Mantener el estado actual de rojo y verde, apagar blanco
         else:
-            set_led_state(False, False, False)  # Apagar el LED blanco si no hay presencia
+            set_led_state(GPIO.input(LED_ROJO), GPIO.input(LED_VERDE), False)  # Mantener rojo y verde, apagar blanco si no hay presencia
         time.sleep(0.1)
 
 def monitoreo_boton():
@@ -151,7 +151,8 @@ def monitoreo_boton():
             if GPIO.input(LED_BLANCO):  # Si el LED blanco está encendido
                 desbloquear_servo()
                 set_led_state(False, True, False)  # Verde encendido, rojo apagado
-                send_telegram_message("✅ Acceso permitido: Usuario desbloqueó la caja.")
+                name, _ = process_camera(camera, users)
+                send_telegram_message(f"✅ Acceso permitido: {name} desbloqueó la caja.")
 
                 start_time = time.time()
                 while time.time() - start_time < DOOR_UNLOCK_TIME:
@@ -227,6 +228,7 @@ if __name__ == "__main__":
     hilo_boton.join()
     hilo_puerta.join()
     hilo_actualizacion.join()
+
 
 
 

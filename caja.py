@@ -152,9 +152,9 @@ def inicializar_estado():
     """Inicializa el estado del sistema al iniciar."""
     set_led_state(False, False, False)
     if sensor_door_open():
-        set_led_state(False, True, )  # Verde encendido
+        set_led_state(False, True, None)  # Verde encendido
     else:
-        set_led_state(True, False, )  # Rojo encendido
+        set_led_state(True, False, None)  # Rojo encendido
 
 def hilo_seguro(func, *args, **kwargs):
     """Ejecuta una función dentro de un hilo y captura errores."""
@@ -170,11 +170,11 @@ def reconocimiento_facial(camera):
         if detectar_presencia():
             name, frame = process_camera(camera, users)
             if name:
-                set_led_state( , , True)
+                set_led_state( None, None, True)
             else:
-                set_led_state( , , False)
+                set_led_state( None, None, False)
         else:
-            set_led_state( , , False)
+            set_led_state( None, None, False)
         time.sleep(0.1)
 
 def monitoreo_boton():
@@ -189,7 +189,7 @@ def monitoreo_boton():
                 last_pressed_time = current_time
                 if GPIO.input(LED_BLANCO):
                     desbloquear_servo()
-                    set_led_state(False, True, )
+                    set_led_state(False, True, None)
                     name, _ = process_camera(camera, users)
                     send_telegram_message(f"✅ Acceso permitido: {name} desbloqueó la caja.")
 
@@ -198,7 +198,7 @@ def monitoreo_boton():
 
                     time.sleep(DOOR_UNLOCK_TIME)
                     bloquear_servo()
-                    set_led_state(True, False, )
+                    set_led_state(True, False, None)
                     send_telegram_message("🔒 Caja bloqueada automáticamente.")
                 else:
                     activate_buzzer()
@@ -217,7 +217,7 @@ def verificar_puerta():
                 if not door_locked:
                     time.sleep(DOOR_AUTO_LOCK_TIME)
                     bloquear_servo()
-                    set_led_state(True, False, )
+                    set_led_state(True, False, None)
                     send_telegram_message("🔒 Caja bloqueada automáticamente al cerrar.")
                     door_locked = True
         time.sleep(0.1)

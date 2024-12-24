@@ -122,10 +122,8 @@ def process_camera(camera, users):
 def inicializar_estado():
     set_led_state(False, False, False)  # Asegurar que todos los LEDs están apagados inicialmente
     if sensor_door_open():
-        desbloquear_servo()
         set_led_state(False, True, False)  # Verde encendido
     else:
-        bloquear_servo()
         set_led_state(True, False, False)  # Rojo encendido
 
 # --- Funciones de Control en Hilos ---
@@ -212,6 +210,8 @@ if __name__ == "__main__":
     users = get_users_from_database()
 
     # Crear hilos
+    hilo_puerta.start()
+    hilo_actualizacion.start()
     hilo_reconocimiento = threading.Thread(target=reconocimiento_facial, args=(camera,))
     hilo_boton = threading.Thread(target=monitoreo_boton)
     hilo_puerta = threading.Thread(target=verificar_puerta)

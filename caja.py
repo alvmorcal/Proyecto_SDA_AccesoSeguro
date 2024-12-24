@@ -229,21 +229,23 @@ def verificar_puerta():
                 # Detectar cuándo se cerró por primera vez
                 last_close_time = current_time
 
-            if not door_locked and last_close_time and current_time - last_close_time >= 5:
-                # Bloquear si han pasado 5 segundos desde que la puerta se cerró
-                with door_lock:
-                    bloquear_servo()
-                    set_led_state(True, False, None)
-                    send_telegram_message("🔒 Caja bloqueada automáticamente al cerrar.")
-                    door_locked = True
-
-            if not door_locked and unlock_time and current_time - unlock_time >= 5:
-                # Bloquear si han pasado 5 segundos desde que se desbloqueó y la puerta no se abrió
+            if unlock_time is not None and not door_locked and current_time - unlock_time >= 5:
+                # Caso 2: Bloquear si han pasado 5 segundos desde que se desbloqueó y no se abrió
                 with door_lock:
                     bloquear_servo()
                     set_led_state(True, False, None)
                     send_telegram_message("🔒 Caja bloqueada automáticamente tras desbloqueo sin apertura.")
                     door_locked = True
+                unlock_time = None  # Resetear para evitar múltiples bloqueos innecesarios
+
+            if last_close_time is not None and not door_locked and current_time - last_close_time >= 5:
+                # Caso 1: Bloquear si han pasado 5 segundos desde que la puerta se cerró
+                with door_lock:
+                    bloquear_servo()
+                    set_led_state(True, False, None)
+                    send_telegram_message("🔒 Caja bloqueada automáticamente al cerrar.")
+                    door_locked = True
+                last_close_time = None  # Resetear para evitar múltiples bloqueos innecesarios
 
         time.sleep(0.1)
 

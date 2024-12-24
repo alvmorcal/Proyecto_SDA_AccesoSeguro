@@ -139,7 +139,7 @@ def monitoreo_boton():
                 desbloquear_servo()
                 set_led(False, LED_ROJO)
                 set_led(True, LED_VERDE)
-                send_telegram_message("✅ Acceso permitido.")
+                send_telegram_message("✅ Acceso permitido: Usuario desbloqueó la caja.")
 
                 start_time = time.time()
                 while time.time() - start_time < DOOR_UNLOCK_TIME:
@@ -160,7 +160,10 @@ def monitoreo_boton():
                 send_telegram_message("🔒 Caja bloqueada automáticamente por tiempo.")
             else:
                 activate_buzzer()
-                send_telegram_message("🚨 Intento no autorizado.")
+                send_telegram_message("🚨 Intento no autorizado: Persona desconocida intentó abrir la caja.")
+                camera = Picamera2()
+                frame = camera.capture_array()
+                send_telegram_photo(frame, "Intento no autorizado detectado.")
 
 def verificar_puerta():
     while True:
@@ -206,6 +209,7 @@ if __name__ == "__main__":
     hilo_boton.join()
     hilo_puerta.join()
     hilo_actualizacion.join()
+
 
 
 

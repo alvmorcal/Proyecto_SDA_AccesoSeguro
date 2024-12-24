@@ -192,14 +192,14 @@ def monitoreo_boton():
                     set_led_state(False, True, None)
                     name, _ = process_camera(camera, users)
                     send_telegram_message(f"✅ Acceso permitido: {name} desbloqueó la caja.")
-                    
-                    time.sleep(DOOR_UNLOCK_TIME)
+                    """
                     while sensor_door_open():
                         time.sleep(0.1)  # Esperar mientras la puerta esté abierta
-                    
+                    time.sleep(DOOR_UNLOCK_TIME)
                     bloquear_servo()
                     set_led_state(True, False, None)
                     send_telegram_message("🔒 Caja bloqueada automáticamente.")
+                    """
                 else:
                     activate_buzzer()
                     send_telegram_message("🚨 Intento no autorizado detectado.")

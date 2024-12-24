@@ -137,7 +137,7 @@ def reconocimiento_facial(camera):
         if detectar_presencia():  # Solo si hay presencia estabilizada
             name, frame = process_camera(camera, users)
             if name:
-                set_led_state(False, GPIO.input(LED_VERDE), True)  # Blanco encendido si se reconoce a una persona conocida
+                set_led_state(GPIO.input(LED_ROJO), GPIO.input(LED_VERDE), True)  # Blanco encendido si se reconoce a una persona conocida
             else:
                 set_led_state(GPIO.input(LED_ROJO), GPIO.input(LED_VERDE), False)  # Mantener el estado actual de rojo y verde, apagar blanco
         else:

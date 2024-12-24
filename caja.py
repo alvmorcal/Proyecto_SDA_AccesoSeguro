@@ -7,7 +7,6 @@ import sqlite3
 import threading
 from picamera2 import Picamera2
 import requests
-import os  # Para manejar configuraciones sensibles desde variables de entorno
 
 # Configuración de pines GPIO
 SENSOR_PRESENCIA = 23
@@ -23,19 +22,20 @@ SENSOR_MAGNETICO = 5
 BOT_TOKEN = "7623844834:AAEh23cpLEIXKFJPcTwh-BCmsqZ6jew"
 CHAT_ID = "1882908107"
 TOLERANCE = 0.6
-DOOR_UNLOCK_TIME = 5  # Tiempo para mantener la puerta desbloqueada tras pulsación válida (segundos)
-DOOR_AUTO_LOCK_TIME = 2  # Tiempo para bloquear automáticamente tras cerrar la puerta (segundos)
+DOOR_UNLOCK_TIME = 5  # Tiempo en segundos
+DOOR_AUTO_LOCK_TIME = 2  # Tiempo en segundos
 
 # Estado inicial de la puerta
 door_locked = False
 
-# Protección
+# Locks para sincronización
 led_lock = threading.Lock()
 door_lock = threading.Lock()
 camera_lock = threading.Lock()
 buzzer_lock = threading.Lock()
 
-GPIO.setwarnings(False)  # Desactivar advertencias de GPIO
+# Configuración de GPIO
+GPIO.setwarnings(False)
 GPIO.setmode(GPIO.BCM)
 GPIO.setup(SENSOR_PRESENCIA, GPIO.IN)
 GPIO.setup(BUTTON_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)
@@ -58,8 +58,10 @@ def send_telegram_message(message):
 
     url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
     try:
-        requests.post(url, data={"chat_id": CHAT_ID, "text": message})
-    except Exception as e:
+        response = requests.post(url, data={"chat_id": CHAT_ID, "text": message})
+        if response.status_code != 200:
+            print(f"Error al enviar mensaje: {response.status_code} {response.text}")
+    except requests.RequestException as e:
         print(f"Error al enviar mensaje a Telegram: {e}")
 
 def send_telegram_photo(frame, caption):
@@ -70,27 +72,40 @@ def send_telegram_photo(frame, caption):
 
     url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendPhoto"
     try:
-        _, buffer = cv2.imencode('.jpg', frame)
-        requests.post(url, files={"photo": buffer.tobytes()}, data={"chat_id": CHAT_ID, "caption": caption})
-    except Exception as e:
+        success, buffer = cv2.imencode('.jpg', frame)
+        if not success:
+            print("Error al codificar la imagen.")
+            return
+
+        response = requests.post(
+            url, 
+            files={"photo": buffer.tobytes()}, 
+            data={"chat_id": CHAT_ID, "caption": caption}
+        )
+        if response.status_code != 200:
+            print(f"Error al enviar foto: {response.status_code} {response.text}")
+    except requests.RequestException as e:
         print(f"Error al enviar foto a Telegram: {e}")
 
-def set_led_state(led_rojo, led_verde, led_blanco):
+def set_led_state(led_rojo=None, led_verde=None, led_blanco=None):
     """Configura el estado de los LEDs de manera segura."""
     with led_lock:
-        if led_rojo!= None: GPIO.output(LED_ROJO, led_rojo)
-        if led_verde!= None: GPIO.output(LED_VERDE, led_verde)
-        if led_blanco!= None: GPIO.output(LED_BLANCO, led_blanco)
+        if led_rojo is not None:
+            GPIO.output(LED_ROJO, led_rojo)
+        if led_verde is not None:
+            GPIO.output(LED_VERDE, led_verde)
+        if led_blanco is not None:
+            GPIO.output(LED_BLANCO, led_blanco)
 
 def desbloquear_servo():
     """Desbloquea el servo motor."""
-    servo.ChangeDutyCycle(12)  # Posición de desbloqueo
+    servo.ChangeDutyCycle(12)
     time.sleep(1)
     servo.ChangeDutyCycle(0)
 
 def bloquear_servo():
     """Bloquea el servo motor."""
-    servo.ChangeDutyCycle(7)  # Posición de bloqueo
+    servo.ChangeDutyCycle(7)
     time.sleep(1)
     servo.ChangeDutyCycle(0)
 
@@ -102,20 +117,16 @@ def activate_buzzer(duration=1):
         GPIO.output(BUZZER_PIN, False)
 
 def detectar_presencia():
-    """Detecta presencia con estabilidad de múltiples lecturas."""
-    readings = [GPIO.input(SENSOR_PRESENCIA) for _ in range(5)]
-    time.sleep(0.01)
-    return any(readings)
+    """Detecta presencia con múltiples lecturas estables."""
+    return any(GPIO.input(SENSOR_PRESENCIA) for _ in range(5))
 
 def button_pressed():
     """Detecta si el botón ha sido pulsado."""
     return GPIO.input(BUTTON_PIN) == GPIO.LOW
 
 def sensor_door_open():
-    """Detecta si la puerta está abierta con múltiples lecturas estables."""
-    stable_readings = [GPIO.input(SENSOR_MAGNETICO) for _ in range(5)]
-    time.sleep(0.02)
-    return all(stable_readings)
+    """Detecta si la puerta está abierta."""
+    return all(GPIO.input(SENSOR_MAGNETICO) for _ in range(5))
 
 def get_users_from_database():
     """Carga los usuarios desde la base de datos."""
@@ -125,7 +136,7 @@ def get_users_from_database():
             cursor.execute("SELECT name, encoding FROM users")
             rows = cursor.fetchall()
             return [(row[0], np.frombuffer(row[1], dtype=np.float64)) for row in rows]
-    except Exception as e:
+    except sqlite3.DatabaseError as e:
         print(f"Error al cargar usuarios: {e}")
         return []
 
@@ -156,54 +167,29 @@ def inicializar_estado():
     else:
         set_led_state(True, False, None)  # Rojo encendido
 
-def hilo_seguro(func, *args, **kwargs):
-    """Ejecuta una función dentro de un hilo y captura errores."""
-    try:
-        func(*args, **kwargs)
-    except Exception as e:
-        print(f"Error en el hilo {func.__name__}: {e}")
-
-def reconocimiento_facial(camera):
+def reconocimiento_facial(camera, users):
     """Hilo que realiza reconocimiento facial continuamente."""
-    global users
     while True:
         if detectar_presencia():
             name, frame = process_camera(camera, users)
             if name:
-                set_led_state( None, None, True)
+                set_led_state(None, None, True)  # Blanco encendido
+                send_telegram_message(f"✅ Acceso permitido: {name}")
             else:
-                set_led_state( None, None, False)
-        else:
-            set_led_state( None, None, False)
+                set_led_state(None, None, False)
         time.sleep(0.1)
 
-def monitoreo_boton():
+def monitoreo_boton(camera, users):
     """Hilo que monitorea las acciones del botón."""
-    global door_locked
-    last_pressed_time = 0
-    debounce_time = 0.2
     while True:
         if button_pressed():
-            current_time = time.time()
-            if current_time - last_pressed_time > debounce_time:
-                last_pressed_time = current_time
-                if GPIO.input(LED_BLANCO):
-                    desbloquear_servo()
-                    set_led_state(False, True, None)
-                    name, _ = process_camera(camera, users)
-                    send_telegram_message(f"✅ Acceso permitido: {name} desbloqueó la caja.")
-                    """
-                    while sensor_door_open():
-                        time.sleep(0.1)  # Esperar mientras la puerta esté abierta
-                    time.sleep(DOOR_UNLOCK_TIME)
-                    bloquear_servo()
-                    set_led_state(True, False, None)
-                    send_telegram_message("🔒 Caja bloqueada automáticamente.")
-                    """
-                else:
-                    activate_buzzer()
-                    send_telegram_message("🚨 Intento no autorizado detectado.")
-
+            if GPIO.input(LED_BLANCO):
+                desbloquear_servo()
+                send_telegram_message("✅ Acceso permitido: Caja desbloqueada.")
+            else:
+                activate_buzzer()
+                send_telegram_message("🚨 Intento no autorizado detectado.")
+        time.sleep(0.1)
 
 def verificar_puerta():
     """Hilo que verifica continuamente el estado de la puerta."""
@@ -239,10 +225,10 @@ if __name__ == "__main__":
 
     users = get_users_from_database()
 
-    threading.Thread(target=hilo_seguro, args=(reconocimiento_facial, camera), daemon=True).start()
-    threading.Thread(target=hilo_seguro, args=(monitoreo_boton,), daemon=True).start()
-    threading.Thread(target=hilo_seguro, args=(verificar_puerta,), daemon=True).start()
-    threading.Thread(target=hilo_seguro, args=(actualizar_usuarios_periodicamente,), daemon=True).start()
+    threading.Thread(target=reconocimiento_facial, args=(camera, users), daemon=True).start()
+    threading.Thread(target=monitoreo_boton, args=(camera, users), daemon=True).start()
+    threading.Thread(target=verificar_puerta, daemon=True).start()
+    threading.Thread(target=actualizar_usuarios_periodicamente, daemon=True).start()
 
     try:
         while True:
@@ -250,6 +236,7 @@ if __name__ == "__main__":
     except KeyboardInterrupt:
         print("Finalizando programa.")
         GPIO.cleanup()
+
 
 
 

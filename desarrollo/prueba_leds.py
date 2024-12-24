@@ -2,8 +2,8 @@
 import RPi.GPIO as GPIO
 import time
 
-LED_ROJO = 17
-LED_VERDE = 27
+LED_ROJO = 27
+LED_VERDE = 17
 LED_BLANCO = 22
 
 GPIO.setwarnings(False)

@@ -22,7 +22,7 @@ SENSOR_MAGNETICO = 5
 BOT_TOKEN = "7623844834:AAEh23cpLEIXKFJPcTwh-BCmsqZ6Cze6jew"
 CHAT_ID = "1882908107"
 TOLERANCE = 0.6
-DOOR_UNLOCK_TIME = 10  # Tiempo para mantener la puerta desbloqueada tras pulsación válida (segundos)
+DOOR_UNLOCK_TIME = 5  # Tiempo para mantener la puerta desbloqueada tras pulsación válida (segundos)
 DOOR_AUTO_LOCK_TIME = 2  # Tiempo para bloquear automáticamente tras cerrar la puerta (segundos)
 
 # Protección de LEDs
@@ -122,8 +122,10 @@ def process_camera(camera, users):
 def inicializar_estado():
     set_led_state(False, False, False)  # Asegurar que todos los LEDs están apagados inicialmente
     if sensor_door_open():
+        desbloquear_servo()
         set_led_state(False, True, False)  # Verde encendido
     else:
+        bloquear_servo()
         set_led_state(True, False, False)  # Rojo encendido
 
 # --- Funciones de Control en Hilos ---
@@ -135,7 +137,7 @@ def reconocimiento_facial(camera):
         if detectar_presencia():  # Solo si hay presencia estabilizada
             name, frame = process_camera(camera, users)
             if name:
-                set_led_state(GPIO.input(LED_ROJO), GPIO.input(LED_VERDE), True)  # Blanco encendido si se reconoce a una persona conocida
+                set_led_state(False, GPIO.input(LED_VERDE), True)  # Blanco encendido si se reconoce a una persona conocida
             else:
                 set_led_state(GPIO.input(LED_ROJO), GPIO.input(LED_VERDE), False)  # Mantener el estado actual de rojo y verde, apagar blanco
         else:
@@ -226,6 +228,7 @@ if __name__ == "__main__":
     hilo_boton.join()
     hilo_puerta.join()
     hilo_actualizacion.join()
+
 
 
 

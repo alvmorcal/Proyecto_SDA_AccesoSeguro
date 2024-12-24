@@ -19,7 +19,7 @@ LED_BLANCO = 22
 SENSOR_MAGNETICO = 5
 
 # Configuración global
-BOT_TOKEN = "7623844834:AAEh23cpLEIXKFJPcTwh-BCmsqZ6Cze6jew"
+BOT_TOKEN = "7623844834:AAEh23cpLEIXKFJPcTwh-BCmsqZ6jew"
 CHAT_ID = "1882908107"
 TOLERANCE = 0.6
 DOOR_UNLOCK_TIME = 5  # Tiempo para mantener la puerta desbloqueada tras pulsación válida (segundos)
@@ -171,12 +171,12 @@ def monitoreo_boton():
                     name, _ = process_camera(camera, users)
                     send_telegram_message(f"✅ Acceso permitido: {name} desbloqueó la caja.")
 
+                    while sensor_door_open():
+                        time.sleep(0.1)  # Esperar mientras la puerta esté abierta
+
                     start_time = time.time()
                     while time.time() - start_time < DOOR_UNLOCK_TIME:
-                        if sensor_door_open():
-                            send_telegram_message("✅ Caja abierta.")
-                            while sensor_door_open():
-                                time.sleep(0.1)
+                        if not sensor_door_open():
                             time.sleep(DOOR_AUTO_LOCK_TIME)
                             bloquear_servo()
                             set_led_state(True, False, led_state["blanco"])
@@ -239,6 +239,7 @@ if __name__ == "__main__":
     except KeyboardInterrupt:
         print("Finalizando programa.")
         GPIO.cleanup()
+
 
 
 

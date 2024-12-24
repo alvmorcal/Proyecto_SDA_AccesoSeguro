@@ -25,6 +25,9 @@ TOLERANCE = 0.6
 DOOR_UNLOCK_TIME = 10  # Tiempo para mantener la puerta desbloqueada tras pulsación válida (segundos)
 DOOR_AUTO_LOCK_TIME = 2  # Tiempo para bloquear automáticamente tras cerrar la puerta (segundos)
 
+# Protección de LEDs
+led_lock = threading.Lock()
+
 GPIO.setmode(GPIO.BCM)
 GPIO.setup(SENSOR_PRESENCIA, GPIO.IN)
 GPIO.setup(BUTTON_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)
@@ -54,8 +57,10 @@ def send_telegram_photo(frame, caption):
     except Exception as e:
         print(f"Error al enviar foto a Telegram: {e}")
 
-def set_led(state, pin):
-    GPIO.output(pin, state)
+def set_led_state(led_rojo, led_verde):
+    with led_lock:
+        GPIO.output(LED_ROJO, led_rojo)
+        GPIO.output(LED_VERDE, led_verde)
 
 def desbloquear_servo():
     servo.ChangeDutyCycle(7)  # Posición de desbloqueo
@@ -73,7 +78,11 @@ def activate_buzzer():
     GPIO.output(BUZZER_PIN, False)
 
 def detectar_presencia():
-    return GPIO.input(SENSOR_PRESENCIA) == GPIO.HIGH
+    readings = []
+    for _ in range(5):  # Toma 5 lecturas rápidas
+        readings.append(GPIO.input(SENSOR_PRESENCIA))
+        time.sleep(0.01)  # 10ms entre lecturas
+    return any(readings)  # Devuelve True si alguna lectura indica presencia
 
 def button_pressed():
     return GPIO.input(BUTTON_PIN) == GPIO.LOW
@@ -110,14 +119,13 @@ def process_camera(camera, users):
     return None, frame
 
 def inicializar_estado():
+    set_led_state(False, False)  # Asegurar que ambos LEDs están apagados inicialmente
     if sensor_door_open():
         desbloquear_servo()
-        set_led(False, LED_ROJO)
-        set_led(True, LED_VERDE)
+        set_led_state(False, True)  # Verde encendido
     else:
         bloquear_servo()
-        set_led(False, LED_VERDE)
-        set_led(True, LED_ROJO)
+        set_led_state(True, False)  # Rojo encendido
 
 # --- Funciones de Control en Hilos ---
 door_locked = False
@@ -125,7 +133,8 @@ door_locked = False
 def reconocimiento_facial(camera):
     global users
     while True:
-        detectar_presencia()  # Detecta presencia pero no envía mensajes
+        if detectar_presencia():  # Solo si hay presencia estabilizada
+            pass  # Aquí iría la lógica de reconocimiento facial si fuese necesaria
         time.sleep(0.1)
 
 def monitoreo_boton():
@@ -134,8 +143,7 @@ def monitoreo_boton():
         if button_pressed():
             if GPIO.input(LED_BLANCO):  # Si el LED blanco está encendido
                 desbloquear_servo()
-                set_led(False, LED_ROJO)
-                set_led(True, LED_VERDE)
+                set_led_state(False, True)  # Verde encendido, rojo apagado
                 send_telegram_message("✅ Acceso permitido: Usuario desbloqueó la caja.")
 
                 start_time = time.time()
@@ -146,15 +154,13 @@ def monitoreo_boton():
                             time.sleep(0.1)
                         time.sleep(DOOR_AUTO_LOCK_TIME)
                         bloquear_servo()
-                        set_led(True, LED_ROJO)
-                        set_led(False, LED_VERDE)
+                        set_led_state(True, False)  # Rojo encendido, verde apagado
                         send_telegram_message("🔒 Caja bloqueada automáticamente.")
                         door_locked = True
                         return
 
                 bloquear_servo()
-                set_led(True, LED_ROJO)
-                set_led(False, LED_VERDE)
+                set_led_state(True, False)  # Rojo encendido, verde apagado
                 send_telegram_message("🔒 Caja bloqueada automáticamente por tiempo.")
                 door_locked = True
             else:
@@ -173,7 +179,7 @@ def verificar_puerta():
             if not door_locked:  # Solo bloquear si aún no está bloqueada
                 time.sleep(DOOR_AUTO_LOCK_TIME)
                 bloquear_servo()
-                set_led(True, LED_ROJO)
+                set_led_state(True, False)  # Rojo encendido, verde apagado
                 send_telegram_message("🔒 Caja bloqueada automáticamente al cerrar.")
                 door_locked = True
         time.sleep(0.1)  # Reducir uso de CPU
@@ -214,6 +220,7 @@ if __name__ == "__main__":
     hilo_boton.join()
     hilo_puerta.join()
     hilo_actualizacion.join()
+
 
 
 

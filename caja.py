@@ -28,6 +28,7 @@ DOOR_AUTO_LOCK_TIME = 2  # Tiempo para bloquear automáticamente tras cerrar la 
 # Protección de LEDs
 led_lock = threading.Lock()
 
+GPIO.setwarnings(False)  # Desactivar advertencias de GPIO
 GPIO.setmode(GPIO.BCM)
 GPIO.setup(SENSOR_PRESENCIA, GPIO.IN)
 GPIO.setup(BUTTON_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)
@@ -75,7 +76,7 @@ def bloquear_servo():
 
 def activate_buzzer():
     GPIO.output(BUZZER_PIN, True)
-    time.sleep(2)  # Sonar durante 2 segundos
+    time.sleep(1)  # Sonar durante 1 segundos
     GPIO.output(BUZZER_PIN, False)
 
 def detectar_presencia():
@@ -144,37 +145,42 @@ def reconocimiento_facial(camera):
 
 def monitoreo_boton():
     global door_locked
+    last_pressed_time = 0
+    debounce_time = 0.2  # Tiempo de debounce (200ms)
     while True:
         if button_pressed():
-            if GPIO.input(LED_BLANCO):  # Si el LED blanco está encendido
-                desbloquear_servo()
-                set_led_state(False, True, GPIO.input(LED_BLANCO))  # Verde encendido, rojo apagado
-                name, _ = process_camera(camera, users)
-                send_telegram_message(f"✅ Acceso permitido: {name} desbloqueó la caja.")
+            current_time = time.time()
+            if current_time - last_pressed_time > debounce_time:  # Verificar debounce
+                last_pressed_time = current_time
+                if GPIO.input(LED_BLANCO):  # Si el LED blanco está encendido
+                    desbloquear_servo()
+                    set_led_state(False, True, GPIO.input(LED_BLANCO))  # Verde encendido, rojo apagado
+                    name, _ = process_camera(camera, users)
+                    send_telegram_message(f"✅ Acceso permitido: {name} desbloqueó la caja.")
 
-                start_time = time.time()
-                while time.time() - start_time < DOOR_UNLOCK_TIME:
-                    if sensor_door_open():
-                        send_telegram_message("✅ Caja abierta.")
-                        while sensor_door_open():
-                            time.sleep(0.1)
-                        time.sleep(DOOR_AUTO_LOCK_TIME)
-                        bloquear_servo()
-                        set_led_state(True, False, GPIO.input(LED_BLANCO))  # Rojo encendido, verde apagado
-                        send_telegram_message("🔒 Caja bloqueada automáticamente.")
-                        door_locked = True
-                        return
+                    start_time = time.time()
+                    while time.time() - start_time < DOOR_UNLOCK_TIME:
+                        if sensor_door_open():
+                            send_telegram_message("✅ Caja abierta.")
+                            while sensor_door_open():
+                                time.sleep(0.1)
+                            time.sleep(DOOR_AUTO_LOCK_TIME)
+                            bloquear_servo()
+                            set_led_state(True, False, GPIO.input(LED_BLANCO))  # Rojo encendido, verde apagado
+                            send_telegram_message("🔒 Caja bloqueada automáticamente.")
+                            door_locked = True
+                            return
 
-                bloquear_servo()
-                set_led_state(True, False, GPIO.input(LED_BLANCO))  # Rojo encendido, verde apagado
-                send_telegram_message("🔒 Caja bloqueada automáticamente por tiempo.")
-                door_locked = True
-            else:
-                activate_buzzer()
-                send_telegram_message("🚨 Intento no autorizado: Persona desconocida intentó abrir la caja.")
-                camera = Picamera2()
-                frame = camera.capture_array()
-                send_telegram_photo(frame, "Intento no autorizado detectado.")
+                    bloquear_servo()
+                    set_led_state(True, False, GPIO.input(LED_BLANCO))  # Rojo encendido, verde apagado
+                    send_telegram_message("🔒 Caja bloqueada automáticamente por tiempo.")
+                    door_locked = True
+                else:
+                    activate_buzzer()
+                    send_telegram_message("🚨 Intento no autorizado: Persona desconocida intentó abrir la caja.")
+                    camera = Picamera2()
+                    frame = camera.capture_array()
+                    send_telegram_photo(frame, "Intento no autorizado detectado.")
 
 def verificar_puerta():
     global door_locked
@@ -210,8 +216,6 @@ if __name__ == "__main__":
     users = get_users_from_database()
 
     # Crear hilos
-    hilo_puerta.start()
-    hilo_actualizacion.start()
     hilo_reconocimiento = threading.Thread(target=reconocimiento_facial, args=(camera,))
     hilo_boton = threading.Thread(target=monitoreo_boton)
     hilo_puerta = threading.Thread(target=verificar_puerta)
@@ -228,6 +232,7 @@ if __name__ == "__main__":
     hilo_boton.join()
     hilo_puerta.join()
     hilo_actualizacion.join()
+
 
 
 

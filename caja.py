@@ -69,7 +69,7 @@ def bloquear_servo():
 
 def activate_buzzer():
     GPIO.output(BUZZER_PIN, True)
-    time.sleep(10)  # Sonar durante 10 segundos
+    time.sleep(2)  # Sonar durante 2 segundos
     GPIO.output(BUZZER_PIN, False)
 
 def detectar_presencia():

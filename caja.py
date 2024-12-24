@@ -122,10 +122,8 @@ def process_camera(camera, users):
 def inicializar_estado():
     set_led_state(False, False, False)  # Asegurar que todos los LEDs están apagados inicialmente
     if sensor_door_open():
-        desbloquear_servo()
         set_led_state(False, True, False)  # Verde encendido
     else:
-        bloquear_servo()
         set_led_state(True, False, False)  # Rojo encendido
 
 # --- Funciones de Control en Hilos ---
@@ -150,7 +148,7 @@ def monitoreo_boton():
         if button_pressed():
             if GPIO.input(LED_BLANCO):  # Si el LED blanco está encendido
                 desbloquear_servo()
-                set_led_state(False, True, False)  # Verde encendido, rojo apagado
+                set_led_state(False, True, GPIO.input(LED_BLANCO))  # Verde encendido, rojo apagado
                 name, _ = process_camera(camera, users)
                 send_telegram_message(f"✅ Acceso permitido: {name} desbloqueó la caja.")
 
@@ -162,13 +160,13 @@ def monitoreo_boton():
                             time.sleep(0.1)
                         time.sleep(DOOR_AUTO_LOCK_TIME)
                         bloquear_servo()
-                        set_led_state(True, False, False)  # Rojo encendido, verde apagado
+                        set_led_state(True, False, GPIO.input(LED_BLANCO))  # Rojo encendido, verde apagado
                         send_telegram_message("🔒 Caja bloqueada automáticamente.")
                         door_locked = True
                         return
 
                 bloquear_servo()
-                set_led_state(True, False, False)  # Rojo encendido, verde apagado
+                set_led_state(True, False, GPIO.input(LED_BLANCO))  # Rojo encendido, verde apagado
                 send_telegram_message("🔒 Caja bloqueada automáticamente por tiempo.")
                 door_locked = True
             else:

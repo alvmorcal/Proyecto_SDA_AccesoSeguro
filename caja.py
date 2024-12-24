@@ -20,8 +20,8 @@ LED_BLANCO = 22
 SENSOR_MAGNETICO = 5
 
 # Configuración global
-BOT_TOKEN = os.getenv("BOT_TOKEN", "")  # Cargar desde variables de entorno
-CHAT_ID = os.getenv("CHAT_ID", "")  # Cargar desde variables de entorno
+BOT_TOKEN = "7623844834:AAEh23cpLEIXKFJPcTwh-BCmsqZ6jew"
+CHAT_ID = "1882908107"
 TOLERANCE = 0.6
 DOOR_UNLOCK_TIME = 5  # Tiempo para mantener la puerta desbloqueada tras pulsación válida (segundos)
 DOOR_AUTO_LOCK_TIME = 2  # Tiempo para bloquear automáticamente tras cerrar la puerta (segundos)

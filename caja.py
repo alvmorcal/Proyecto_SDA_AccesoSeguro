@@ -7,7 +7,6 @@ import sqlite3
 import threading
 from picamera2 import Picamera2
 import requests
-import os  # Para manejar configuraciones sensibles desde variables de entorno
 
 # Configuración de pines GPIO
 SENSOR_PRESENCIA = 23
@@ -23,19 +22,19 @@ SENSOR_MAGNETICO = 5
 BOT_TOKEN = "7623844834:AAEh23cpLEIXKFJPcTwh-BCmsqZ6Cze6jew"
 CHAT_ID = "1882908107"
 TOLERANCE = 0.6
-DOOR_UNLOCK_TIME = 5  # Tiempo para mantener la puerta desbloqueada tras pulsación válida (segundos)
-DOOR_AUTO_LOCK_TIME = 2  # Tiempo para bloquear automáticamente tras cerrar la puerta (segundos)
+DOOR_UNLOCK_TIME = 5
+DOOR_AUTO_LOCK_TIME = 2
 
-# Estado inicial de la puerta
 door_locked = False
 
-# Protección
+# Locks para protección de recursos
 led_lock = threading.Lock()
 door_lock = threading.Lock()
 camera_lock = threading.Lock()
 buzzer_lock = threading.Lock()
 
-GPIO.setwarnings(False)  # Desactivar advertencias de GPIO
+# Configuración de GPIO
+GPIO.setwarnings(False)
 GPIO.setmode(GPIO.BCM)
 GPIO.setup(SENSOR_PRESENCIA, GPIO.IN)
 GPIO.setup(BUTTON_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)
@@ -46,7 +45,6 @@ GPIO.setup(LED_VERDE, GPIO.OUT)
 GPIO.setup(LED_BLANCO, GPIO.OUT)
 GPIO.setup(SENSOR_MAGNETICO, GPIO.IN)
 
-# Configurar PWM para el servo
 servo = GPIO.PWM(SERVO_PIN, 50)
 servo.start(0)
 
@@ -55,11 +53,11 @@ def send_telegram_message(message):
     if not BOT_TOKEN or not CHAT_ID:
         print("Error: BOT_TOKEN o CHAT_ID no configurados.")
         return
-
     url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
     try:
-        requests.post(url, data={"chat_id": CHAT_ID, "text": message})
-    except Exception as e:
+        response = requests.post(url, data={"chat_id": CHAT_ID, "text": message})
+        response.raise_for_status()
+    except requests.exceptions.RequestException as e:
         print(f"Error al enviar mensaje a Telegram: {e}")
 
 def send_telegram_photo(frame, caption):
@@ -67,32 +65,35 @@ def send_telegram_photo(frame, caption):
     if not BOT_TOKEN or not CHAT_ID:
         print("Error: BOT_TOKEN o CHAT_ID no configurados.")
         return
-
     url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendPhoto"
     try:
         _, buffer = cv2.imencode('.jpg', frame)
-        requests.post(url, files={"photo": buffer.tobytes()}, data={"chat_id": CHAT_ID, "caption": caption})
-    except Exception as e:
+        response = requests.post(url, files={"photo": buffer.tobytes()}, data={"chat_id": CHAT_ID, "caption": caption})
+        response.raise_for_status()
+    except requests.exceptions.RequestException as e:
         print(f"Error al enviar foto a Telegram: {e}")
 
-def set_led_state(led_rojo, led_verde, led_blanco):
+def set_led_state(led_rojo=None, led_verde=None, led_blanco=None):
     """Configura el estado de los LEDs de manera segura."""
     with led_lock:
-        if led_rojo!= None: GPIO.output(LED_ROJO, led_rojo)
-        if led_verde!= None: GPIO.output(LED_VERDE, led_verde)
-        if led_blanco!= None: GPIO.output(LED_BLANCO, led_blanco)
+        if led_rojo is not None:
+            GPIO.output(LED_ROJO, led_rojo)
+        if led_verde is not None:
+            GPIO.output(LED_VERDE, led_verde)
+        if led_blanco is not None:
+            GPIO.output(LED_BLANCO, led_blanco)
 
 def desbloquear_servo():
     """Desbloquea el servo motor."""
     global unlock_time
-    unlock_time = time.time()  # Registrar el tiempo de desbloqueo
-    servo.ChangeDutyCycle(12)  # Posición de desbloqueo
+    unlock_time = time.time()
+    servo.ChangeDutyCycle(12)
     time.sleep(1)
     servo.ChangeDutyCycle(0)
 
 def bloquear_servo():
     """Bloquea el servo motor."""
-    servo.ChangeDutyCycle(7)  # Posición de bloqueo
+    servo.ChangeDutyCycle(7)
     time.sleep(1)
     servo.ChangeDutyCycle(0)
 
@@ -105,9 +106,7 @@ def activate_buzzer(duration=1):
 
 def detectar_presencia():
     """Detecta presencia con estabilidad de múltiples lecturas."""
-    readings = [GPIO.input(SENSOR_PRESENCIA) for _ in range(5)]
-    time.sleep(0.01)
-    return any(readings)
+    return any(GPIO.input(SENSOR_PRESENCIA) for _ in range(5))
 
 def button_pressed():
     """Detecta si el botón ha sido pulsado."""
@@ -115,9 +114,7 @@ def button_pressed():
 
 def sensor_door_open():
     """Detecta si la puerta está abierta con múltiples lecturas estables."""
-    stable_readings = [GPIO.input(SENSOR_MAGNETICO) for _ in range(5)]
-    time.sleep(0.02)
-    return all(stable_readings)
+    return all(GPIO.input(SENSOR_MAGNETICO) for _ in range(5))
 
 def get_users_from_database():
     """Carga los usuarios desde la base de datos."""
@@ -127,7 +124,7 @@ def get_users_from_database():
             cursor.execute("SELECT name, encoding FROM users")
             rows = cursor.fetchall()
             return [(row[0], np.frombuffer(row[1], dtype=np.float64)) for row in rows]
-    except Exception as e:
+    except sqlite3.Error as e:
         print(f"Error al cargar usuarios: {e}")
         return []
 
@@ -154,9 +151,9 @@ def inicializar_estado():
     """Inicializa el estado del sistema al iniciar."""
     set_led_state(False, False, False)
     if sensor_door_open():
-        set_led_state(False, True, None)  # Verde encendido
+        set_led_state(False, True, None)
     else:
-        set_led_state(True, False, None)  # Rojo encendido
+        set_led_state(True, False, None)
 
 def hilo_seguro(func, *args, **kwargs):
     """Ejecuta una función dentro de un hilo y captura errores."""
@@ -171,12 +168,9 @@ def reconocimiento_facial(camera):
     while True:
         if detectar_presencia():
             name, frame = process_camera(camera, users)
-            if name:
-                set_led_state( None, None, True)
-            else:
-                set_led_state( None, None, False)
+            set_led_state(None, None, name is not None)
         else:
-            set_led_state( None, None, False)
+            set_led_state(None, None, False)
         time.sleep(0.1)
 
 def monitoreo_boton():
@@ -196,56 +190,46 @@ def monitoreo_boton():
                     send_telegram_message(f"✅ Acceso permitido: {name} desbloqueó la caja.")
                 else:
                     activate_buzzer()
-                    
-                    # Captura una imagen de la cámara
                     with camera_lock:
                         frame = camera.capture_array()
-                    
-                    # Envía el mensaje con la foto
                     send_telegram_message("🚨 Intento no autorizado detectado.")
                     send_telegram_photo(frame, "🚨 Foto del intento no autorizado")
-
 
 def verificar_puerta():
     """Hilo que verifica continuamente el estado de la puerta."""
     global door_locked
-    last_close_time = None  # Para rastrear el tiempo desde que la puerta se cerró
-    unlock_time = None      # Para rastrear el tiempo desde que se desbloqueó la puerta
+    last_close_time = None
+    unlock_time = None
 
     while True:
         door_is_open = sensor_door_open()
 
         if door_is_open:
-            # La puerta está abierta, reiniciar los tiempos y asegurarse de que no esté bloqueada
             with door_lock:
                 door_locked = False
             last_close_time = None
             unlock_time = None
         else:
-            # La puerta está cerrada
             current_time = time.time()
 
             if last_close_time is None:
-                # Detectar cuándo se cerró por primera vez
                 last_close_time = current_time
 
             if unlock_time is not None and not door_locked and current_time - unlock_time >= 5:
-                # Caso 2: Bloquear si han pasado 5 segundos desde que se desbloqueó y no se abrió
                 with door_lock:
                     bloquear_servo()
                     set_led_state(True, False, None)
                     send_telegram_message("🔒 Caja bloqueada automáticamente tras desbloqueo sin apertura.")
                     door_locked = True
-                unlock_time = None  # Resetear para evitar múltiples bloqueos innecesarios
+                unlock_time = None
 
             if last_close_time is not None and not door_locked and current_time - last_close_time >= 5:
-                # Caso 1: Bloquear si han pasado 5 segundos desde que la puerta se cerró
                 with door_lock:
                     bloquear_servo()
                     set_led_state(True, False, None)
                     send_telegram_message("🔒 Caja bloqueada automáticamente al cerrar.")
                     door_locked = True
-                last_close_time = None  # Resetear para evitar múltiples bloqueos innecesarios
+                last_close_time = None
 
         time.sleep(0.1)
 
@@ -277,6 +261,7 @@ if __name__ == "__main__":
     except KeyboardInterrupt:
         print("Finalizando programa.")
         GPIO.cleanup()
+
 
 
 

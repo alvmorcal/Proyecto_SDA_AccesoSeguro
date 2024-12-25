@@ -26,6 +26,7 @@ DOOR_UNLOCK_TIME = 5
 DOOR_AUTO_LOCK_TIME = 2
 
 door_locked = False
+servo_unlocked = False  # Indica si el servo está en posición de desbloqueo
 
 # Locks para protección de recursos
 led_lock = threading.Lock()
@@ -85,17 +86,20 @@ def set_led_state(led_rojo=None, led_verde=None, led_blanco=None):
 
 def desbloquear_servo():
     """Desbloquea el servo motor."""
-    global unlock_time
+    global unlock_time, servo_unlocked
     unlock_time = time.time()
+    servo_unlocked = True
     servo.ChangeDutyCycle(12)
     time.sleep(1)
     servo.ChangeDutyCycle(0)
 
 def bloquear_servo():
     """Bloquea el servo motor."""
+    global servo_unlocked
     servo.ChangeDutyCycle(7)
     time.sleep(1)
     servo.ChangeDutyCycle(0)
+    servo_unlocked = False
 
 def activate_buzzer(duration=1):
     """Activa el buzzer por un tiempo específico."""
@@ -175,12 +179,15 @@ def reconocimiento_facial(camera):
 
 def monitoreo_boton():
     """Hilo que monitorea las acciones del botón."""
-    global door_locked
+    global door_locked, servo_unlocked
     last_pressed_time = 0
     debounce_time = 0.2
     while True:
         if button_pressed():
             current_time = time.time()
+            if servo_unlocked:
+                print("Botón pulsado pero ignorado porque el sistema está desbloqueado.")
+                continue
             if current_time - last_pressed_time > debounce_time:
                 last_pressed_time = current_time
                 if GPIO.input(LED_BLANCO):
@@ -261,6 +268,7 @@ if __name__ == "__main__":
     except KeyboardInterrupt:
         print("Finalizando programa.")
         GPIO.cleanup()
+
 
 
 

@@ -186,7 +186,6 @@ def monitoreo_boton():
         if button_pressed():
             current_time = time.time()
             if servo_unlocked:
-                print("Botón pulsado pero ignorado porque el sistema está desbloqueado.")
                 continue
             if current_time - last_pressed_time > debounce_time:
                 last_pressed_time = current_time
@@ -200,7 +199,7 @@ def monitoreo_boton():
                     with camera_lock:
                         frame = camera.capture_array()
                     send_telegram_message("🚨 Intento no autorizado detectado.")
-                    send_telegram_photo(frame, "🚨 Foto del intento no autorizado")
+                    send_telegram_photo(frame, "🚨 Intruso 🚨")
 
 def verificar_puerta():
     """Hilo que verifica continuamente el estado de la puerta."""

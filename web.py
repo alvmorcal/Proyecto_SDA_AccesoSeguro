@@ -18,7 +18,7 @@ ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 ADMIN_USER = 'admin'
-ADMIN_PASSWORD = bcrypt.generate_password_hash('admin123').decode('utf-8')
+ADMIN_PASSWORD = bcrypt.generate_password_hash('admin').decode('utf-8')
 
 # Configuración SMTP
 SMTP_SERVER = 'smtp.gmail.com'

@@ -47,10 +47,10 @@ ADMIN_USER = 'admin'
 ADMIN_PASSWORD = bcrypt.generate_password_hash('admin').decode('utf-8')  # Contraseña encriptada.
 
 # Configuración SMTP para enviar correos electrónicos
-SMTP_SERVER = 'smtp.gmail.com'
+SMTP_SERVER = 'acceso.seguro2025.gmail.com'
 SMTP_PORT = 587
-SMTP_USER = 'tu_correo@gmail.com'
-SMTP_PASSWORD = 'tu_contraseña'
+SMTP_USER = 'acceso.seguro2025.gmail.com'
+SMTP_PASSWORD = 'admin2025'
 
 # Configuración del bot de Telegram
 BOT_TOKEN = "7623844834:AAEh23cpLEIXKFJPcTwh-BCmsqZ6Cze6jew"

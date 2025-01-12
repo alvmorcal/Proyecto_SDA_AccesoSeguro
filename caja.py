@@ -201,8 +201,10 @@ def inicializar_estado():
     set_led_state(False, False, False)
     if sensor_door_open():
         desbloquear_servo()
+        open=1
     else:
         bloquear_servo()
+        open=0
 
 def hilo_seguro(func, *args, **kwargs):
     """
@@ -260,7 +262,7 @@ def verificar_puerta():
     - La puerta está cerrada
     - Han pasado 5 segundos
     """
-    global door_locked, unlock_time, servo_unlocked
+    global door_locked, unlock_time, servo_unlocked, open
 
     while True:
         door_is_open = sensor_door_open()  # Verificar si la puerta está abierta

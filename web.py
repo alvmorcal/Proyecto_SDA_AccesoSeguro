@@ -168,7 +168,7 @@ def add_user():
                 c.execute("INSERT INTO users (name, email, encoding) VALUES (?, ?, ?)", (unique_name, email, encoding.tobytes()))
                 conn.commit()
                 # Enviar notificaciones
-                send_telegram_message(f"👤 Usuario registrado: {unique_name}")
+                send_telegram_message(f"\ud83d\udc64 Usuario registrado: {unique_name}")
                 send_email(email, "Confirmación de Registro", f"Hola {unique_name}, ha sido dado de alta en la aplicación. Ya puede acceder al contenido de la caja de seguridad.")
                 flash(f'Hola {unique_name}, ha sido dado de alta en la aplicación. Ya puede acceder al contenido de la caja de seguridad.', 'success')
             except sqlite3.IntegrityError:
@@ -179,9 +179,9 @@ def add_user():
         return redirect(url_for('add_user'))
     return render_template('add_user.html')
 
-@app.route('/delete_user', methods=['POST'])
-def delete_user():
-    """Elimina un usuario específico de la base de datos y envía una notificación por correo."""
+@app.route('/delete_user_confirm', methods=['POST'])
+def delete_user_confirm():
+    """Elimina un usuario específico de la base de datos."""
     if not session.get('logged_in'):
         return redirect(url_for('login'))
     username = request.form['username']
@@ -189,23 +189,13 @@ def delete_user():
     if bcrypt.check_password_hash(ADMIN_PASSWORD, admin_password):
         conn = connect_db()
         c = conn.cursor()
-        # Obtener el correo del usuario antes de eliminarlo
-        c.execute("SELECT email FROM users WHERE name = ?", (username,))
-        user = c.fetchone()
-        if user:
-            email = user['email']
-            c.execute("DELETE FROM users WHERE name = ?", (username,))
-            conn.commit()
-            send_telegram_message(f"❌ Usuario eliminado: {username}")
-            send_email(email, "Confirmación de Baja", f"Hola {username}, ha sido dado de baja de la base de datos. Ya no podrá acceder al contenido de la caja de seguridad.")
-            flash(f'Usuario {username} eliminado correctamente.', 'success')
-        else:
-            flash(f'No se encontró al usuario {username}.', 'danger')
+        c.execute("DELETE FROM users WHERE name = ?", (username,))  # Elimina el usuario.
+        conn.commit()
         conn.close()
-        return redirect(url_for('dashboard'))
+        send_telegram_message(f"\u274c Usuario eliminado: {username}")
+        return {"status": "success", "message": f'Hola {username}, ha sido dado de baja de la base de datos. Ya no podrá acceder al contenido de la caja de seguridad.'}, 200
     else:
-        flash("Clave de administrador incorrecta.", 'danger')
-        return redirect(url_for('dashboard'))
+        return {"status": "error", "message": "Clave de administrador incorrecta."}, 401
 
 @app.route('/logout')
 def logout():
@@ -224,9 +214,3 @@ if __name__ == '__main__':
     if not os.path.exists(UPLOAD_FOLDER):
         os.makedirs(UPLOAD_FOLDER)  # Crear directorio para subir archivos si no existe.
     app.run(debug=True, host='0.0.0.0', port=5000)  # Iniciar la aplicación en modo depuración.
-
-
-
-
-
-

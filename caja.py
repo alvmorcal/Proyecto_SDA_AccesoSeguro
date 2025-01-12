@@ -199,6 +199,7 @@ def inicializar_estado():
     Inicializa el estado del sistema al iniciar.
     """
     set_led_state(False, False, False)
+    unlock_time=None
     if sensor_door_open():
         desbloquear_servo()
         open=1

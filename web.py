@@ -119,90 +119,42 @@ def dashboard():
     conn.close()
     return render_template('dashboard.html', users=users)
 
-@app.route('/add_user', methods=['GET', 'POST'])
-def add_user():
-    """Permite registrar un nuevo usuario con imagen."""
-    if not session.get('logged_in'):
-        return redirect(url_for('login'))
-    if request.method == 'POST':
-        name = request.form['name']
-        email = request.form['email']
-        file = request.files['file']
-        if not name or not email or not file or not allowed_file(file.filename):
-            flash('Debe ingresar un nombre, correo y una imagen válida.', 'danger')
-            return redirect(url_for('add_user'))
-
-        filename = secure_filename(file.filename)
-        filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-        file.save(filepath)
-
-        # Cargar la imagen y obtener las codificaciones faciales
-        image = face_recognition.load_image_file(filepath)
-        face_encodings = face_recognition.face_encodings(image)
-        if not face_encodings:
-            flash("No se detectó ninguna cara en la imagen.", "danger")
-        else:
-            encoding = face_encodings[0]
-            conn = connect_db()
-            c = conn.cursor()
-            # Verificar si el correo ya está registrado
-            c.execute("SELECT name FROM users WHERE email = ?", (email,))
-            if c.fetchone():
-                flash("Ya existe un usuario registrado con este correo.", "danger")
-                conn.close()
-                os.remove(filepath)
-                return redirect(url_for('add_user'))
-
-            unique_name = name
-            counter = 1
-            while True:
-                # Verificar si el nombre es único
-                c.execute("SELECT name FROM users WHERE name = ?", (unique_name,))
-                if not c.fetchone():
-                    break
-                unique_name = f"{name}_{str(counter).zfill(3)}"
-                counter += 1
-
-            try:
-                # Insertar el usuario en la base de datos
-                c.execute("INSERT INTO users (name, email, encoding) VALUES (?, ?, ?)", (unique_name, email, encoding.tobytes()))
-                conn.commit()
-                # Enviar notificaciones
-                send_telegram_message(f"\ud83d\udc64 Usuario registrado: {unique_name}")
-                send_email(email, "Confirmación de Registro", f"Hola {unique_name}, ha sido dado de alta en la aplicación. Ya puede acceder al contenido de la caja de seguridad.")
-                flash(f'Usuario dado de alta: "{unique_name}".', 'danger')
-            except sqlite3.IntegrityError:
-                flash(f'Error al registrar el usuario "{unique_name}".', 'danger')
-            finally:
-                conn.close()
-        os.remove(filepath)
-        return redirect(url_for('add_user'))
-    return render_template('add_user.html')
-
 @app.route('/delete_user_confirm', methods=['POST'])
 def delete_user_confirm():
     """Elimina un usuario específico de la base de datos."""
     if not session.get('logged_in'):
         return redirect(url_for('login'))
     username = request.form['username']
-    email = request.form['email']
     admin_password = request.form['admin_password']
     if bcrypt.check_password_hash(ADMIN_PASSWORD, admin_password):
         conn = connect_db()
         c = conn.cursor()
-        c.execute("DELETE FROM users WHERE name = ?", (username,))  # Elimina el usuario.
+        # Obtener el correo del usuario antes de eliminarlo
+        c.execute("SELECT email FROM users WHERE name = ?", (username,))
+        user = c.fetchone()
+        if not user:
+            flash("El usuario no existe.", "danger")
+            conn.close()
+            return redirect(url_for('dashboard'))
+        
+        email = user['email']  # Extraer el correo electrónico
+        c.execute("DELETE FROM users WHERE name = ?", (username,))  # Eliminar el usuario
         conn.commit()
         conn.close()
-        send_telegram_message(f"\u274c Usuario eliminado: {username}")
+
+        # Enviar notificaciones
+        send_telegram_message(f"❌ Usuario eliminado: {username}")
         send_email(email, "Confirmación de Baja", f"Hola {username}, ha sido dado de baja de la base de datos. Ya no podrá acceder al contenido de la caja de seguridad.")
-        return {"status": "success", "message": f'El usuario ha sido dado de baja.'}, 200
+        flash(f"Usuario '{username}' eliminado correctamente.", "success")
     else:
-        return {"status": "error", "message": "Clave de administrador incorrecta."}, 401
+        flash("Clave de administrador incorrecta.", "danger")
+    return redirect(url_for('dashboard'))
 
 @app.route('/logout')
 def logout():
     """Cierra la sesión del administrador."""
     session['logged_in'] = False
+    flash("Sesión cerrada correctamente.", "success")
     return redirect(url_for('login'))
 
 if __name__ == '__main__':

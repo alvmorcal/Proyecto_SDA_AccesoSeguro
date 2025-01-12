@@ -47,7 +47,7 @@ ADMIN_USER = 'admin'
 ADMIN_PASSWORD = bcrypt.generate_password_hash('admin').decode('utf-8')  # Contraseña encriptada.
 
 # Configuración SMTP para enviar correos electrónicos
-SMTP_SERVER = 'acceso.seguro2025.gmail.com'
+SMTP_SERVER = 'smtp.gmail.com'
 SMTP_PORT = 587
 SMTP_USER = 'acceso.seguro2025.gmail.com'
 SMTP_PASSWORD = 'deiwdbzxdaojmclp'

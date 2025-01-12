@@ -51,12 +51,6 @@
         .btn-primary:hover {
             background-color: #6483B3;
         }
-        .toast-container {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            z-index: 1055;
-        }
     </style>
 </head>
 <body>
@@ -73,36 +67,10 @@
         </form>
     </div>
 
-    <!-- Toast Notifications -->
-    <div class="toast-container position-fixed top-0 end-0 p-3">
-        {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-            {% for category, message in messages %}
-                <div class="toast align-items-center text-white bg-{{ 'success' if category == 'success' else 'danger' }} border-0 mb-3" role="alert" aria-live="assertive" aria-atomic="true" data-bs-delay="5000">
-                    <div class="d-flex">
-                        <div class="toast-body">
-                            {{ message }}
-                        </div>
-                        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
-                    </div>
-                </div>
-            {% endfor %}
-        {% endif %}
-        {% endwith %}
-    </div>
-
-    <script>
-        // Inicializar todas las notificaciones (toasts)
-        document.addEventListener('DOMContentLoaded', () => {
-            document.querySelectorAll('.toast').forEach(toastNode => {
-                const toast = new bootstrap.Toast(toastNode);
-                toast.show();
-            });
-        });
-    </script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
+
 
 
 

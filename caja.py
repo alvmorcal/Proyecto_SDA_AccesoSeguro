@@ -271,7 +271,7 @@ def verificar_puerta():
             unlock_time = None  # Reiniciar el tiempo de desbloqueo
             open=1
         else:
-            if open==1
+            if open==1:
                 open=0
                 unlock_time=time.time()
             if current_time - unlock_time >= 5:  # Han pasado 5 segundos con la puerta cerrada

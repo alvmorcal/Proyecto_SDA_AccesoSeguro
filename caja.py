@@ -27,8 +27,6 @@ SENSOR_MAGNETICO = 5
 
 # Configuración global
 TOLERANCE = 0.6  # Tolerancia para el reconocimiento facial
-DOOR_UNLOCK_TIME = 5  # Tiempo para mantener la puerta desbloqueada
-DOOR_AUTO_LOCK_TIME = 2  # Tiempo para bloquear automáticamente la puerta
 
 door_locked = False  # Estado de bloqueo de la puerta
 servo_unlocked = False  # Indica si el servo está desbloqueado
@@ -122,14 +120,24 @@ def bloquear_servo():
     servo.ChangeDutyCycle(0)  # Detener el servo
     servo_unlocked = False
 
-def activate_buzzer(duration=1):
+def activate_buzzer(duration=3):
     """
-    Activa el buzzer por un tiempo específico.
+    Activa el buzzer para sonar como una sirena de policía durante un tiempo específico.
     """
     with buzzer_lock:
-        GPIO.output(BUZZER_PIN, True)
-        time.sleep(duration)
-        GPIO.output(BUZZER_PIN, False)
+        start_time = time.time()
+        while time.time() - start_time < duration:
+            # Simula el sonido de una sirena al alternar frecuencias
+            for _ in range(5):  # Ciclo de subida
+                GPIO.output(BUZZER_PIN, True)
+                time.sleep(0.05)  # Ajusta este valor para cambiar el tono
+                GPIO.output(BUZZER_PIN, False)
+                time.sleep(0.05)
+            for _ in range(5):  # Ciclo de bajada
+                GPIO.output(BUZZER_PIN, True)
+                time.sleep(0.1)  # Ajusta este valor para cambiar el tono
+                GPIO.output(BUZZER_PIN, False)
+                time.sleep(0.1)
 
 def detectar_presencia():
     """
@@ -236,11 +244,11 @@ def monitoreo_boton():
                     name, frame = process_camera(camera, users)
                     send_telegram_message(f"✅ Acceso permitido: {name} desbloqueó la caja.")
                 else:
-                    activate_buzzer()
                     with camera_lock:
                         frame = camera.capture_array()
                     send_telegram_message("🚨 Intento no autorizado detectado.")
                     send_telegram_photo(frame, "🚨 Intruso 🚨")
+                    activate_buzzer()
 
 def verificar_puerta():
     """
@@ -264,22 +272,13 @@ def verificar_puerta():
             if last_close_time is None:
                 last_close_time = current_time
 
-            if unlock_time is not None and not door_locked and current_time - unlock_time >= 5:
-                with door_lock:
-                    bloquear_servo()
-                    set_led_state(True, False, None)
-                    send_telegram_message("🔒 Caja bloqueada automáticamente tras desbloqueo sin apertura.")
-                    door_locked = True
-                unlock_time = None
-
             if last_close_time is not None and not door_locked and current_time - last_close_time >= 5:
                 with door_lock:
                     bloquear_servo()
                     set_led_state(True, False, None)
-                    send_telegram_message("🔒 Caja bloqueada automáticamente al cerrar.")
+                    send_telegram_message("🔒 Caja bloqueada.")
                     door_locked = True
                 last_close_time = None
-
         time.sleep(0.1)
 
 def actualizar_usuarios_periodicamente():

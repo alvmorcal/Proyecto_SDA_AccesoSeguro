@@ -160,7 +160,7 @@ def add_user():
                 c.execute("INSERT INTO users (name, email, encoding) VALUES (?, ?, ?)", (unique_name, email, encoding.tobytes()))
                 conn.commit()
                 # Enviar notificaciones
-                send_telegram_message(f"\ud83d\udc64 Usuario registrado: {unique_name}")
+                send_telegram_message(f"👤 Usuario registrado: {unique_name}")
                 send_email(email, "Confirmación de Registro", f"Hola {unique_name}, ha sido dado de alta en la aplicación. Ya puede acceder al contenido de la caja de seguridad.")
             finally:
                 conn.close()

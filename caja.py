@@ -29,7 +29,6 @@ SENSOR_MAGNETICO = 5
 TOLERANCE = 0.6  # Tolerancia para el reconocimiento facial
 lock_time = None
 empezar_cuenta=1
-door_locked = False  # Estado de bloqueo de la puerta
 servo_unlocked = False  # Indica si el servo está desbloqueado
 
 # Locks para proteger recursos compartidos en hilos
@@ -261,7 +260,7 @@ def verificar_puerta():
     - La puerta está cerrada
     - Han pasado 5 segundos
     """
-    global door_locked, lock_time, servo_unlocked, empezar_cuenta
+    global lock_time, servo_unlocked, empezar_cuenta
 
     while True:
         door_is_open = sensor_door_open()  # Verificar si la puerta está abierta

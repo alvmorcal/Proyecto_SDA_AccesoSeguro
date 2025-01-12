@@ -163,8 +163,6 @@ def add_user():
                 # Enviar notificaciones
                 send_telegram_message(f"\ud83d\udc64 Usuario registrado: {unique_name}")
                 send_email(email, "Confirmación de Registro", f"Hola {unique_name}, ha sido dado de alta en la aplicación. Ya puede acceder al contenido de la caja de seguridad.")
-            except sqlite3.IntegrityError:
-                
             finally:
                 conn.close()
         os.remove(filepath)

@@ -272,15 +272,16 @@ def verificar_puerta():
             lock_time = None
             empezar_cuenta=1
         else:
-            if empezar_cuenta==1:
-                lock_time=time.time()
-                empezar_cuenta=0
-            if current_time - lock_time >= 5:  # Han pasado 5 segundos con la puerta cerrada
-                with door_lock:
-                    bloquear_servo()
-                    send_telegram_message("🔒 Caja bloqueada.")
-                    lock_time = None  # Reiniciar el tiempo de desbloqueo
-                    empezar_cuenta=1
+            if servo_unlocked:
+                if empezar_cuenta==1:
+                    lock_time=time.time()
+                    empezar_cuenta=0
+                if current_time - lock_time >= 5:  # Han pasado 5 segundos con la puerta cerrada
+                    with door_lock:
+                        bloquear_servo()
+                        send_telegram_message("🔒 Caja bloqueada.")
+                        lock_time = None  # Reiniciar el tiempo de desbloqueo
+                        empezar_cuenta=1
 
         time.sleep(0.1)
 

@@ -70,6 +70,7 @@ def send_telegram_message(message):
 def send_email(to_email, subject, body):
     """Envía un correo electrónico utilizando las configuraciones SMTP."""
     try:
+        print(f"Enviando correo a {to_email} con asunto '{subject}'")  # Depuración
         msg = MIMEText(body)
         msg['Subject'] = subject
         msg['From'] = SMTP_USER
@@ -183,19 +184,29 @@ def delete_user_confirm():
     """Elimina un usuario específico de la base de datos."""
     if not session.get('logged_in'):
         return redirect(url_for('login'))
-    username = request.form['username']
-    email = request.form['email']  # Recibe el email del usuario a eliminar
-    admin_password = request.form['admin_password']
+    username = request.form.get('username')
+    email = request.form.get('email')  # Recibe el email del usuario a eliminar
+    admin_password = request.form.get('admin_password')
+
+    if not username or not email or not admin_password:
+        return {"status": "error", "message": "Faltan datos requeridos para procesar la solicitud."}, 400
+
     if bcrypt.check_password_hash(ADMIN_PASSWORD, admin_password):
-        conn = connect_db()
-        c = conn.cursor()
-        c.execute("DELETE FROM users WHERE name = ?", (username,))  # Elimina el usuario.
-        conn.commit()
-        conn.close()
-        # Enviar notificación por correo al eliminar usuario
-        send_email(email, "Baja de Usuario", f"Hola {username}, ha sido dado de baja de la base de datos. Ya no podrá acceder al contenido de la caja de seguridad.")
-        send_telegram_message(f"\u274c Usuario eliminado: {username}")
-        return {"status": "success", "message": f'Usuario "{username}" eliminado correctamente.'}, 200
+        try:
+            conn = connect_db()
+            c = conn.cursor()
+            c.execute("DELETE FROM users WHERE name = ?", (username,))
+            if c.rowcount == 0:  # Verifica si el usuario existía
+                return {"status": "error", "message": "Usuario no encontrado."}, 404
+            conn.commit()
+            conn.close()
+            # Enviar notificación por correo al eliminar usuario
+            send_email(email, "Baja de Usuario", f"Hola {username}, ha sido dado de baja de la base de datos. Ya no podrá acceder al contenido de la caja de seguridad.")
+            send_telegram_message(f"❌ Usuario eliminado: {username}")
+            return {"status": "success", "message": f'Usuario "{username}" eliminado correctamente.'}, 200
+        except Exception as e:
+            print(f"Error al eliminar usuario: {e}")
+            return {"status": "error", "message": "Error interno al procesar la solicitud."}, 500
     else:
         return {"status": "error", "message": "Clave de administrador incorrecta."}, 401
 
@@ -216,6 +227,7 @@ if __name__ == '__main__':
     if not os.path.exists(UPLOAD_FOLDER):
         os.makedirs(UPLOAD_FOLDER)  # Crear directorio para subir archivos si no existe.
     app.run(debug=True, host='0.0.0.0', port=5000)  # Iniciar la aplicación en modo depuración.
+
 
 
 

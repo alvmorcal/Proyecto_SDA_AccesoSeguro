@@ -104,8 +104,9 @@ def desbloquear_servo():
     """
     Desbloquea el servo motor.
     """
-    global servo_unlocked
+    global servo_unlocked, unlock_time
     servo_unlocked = True
+    unlock_time = time.time()  # Registrar el tiempo de desbloqueo
     servo.ChangeDutyCycle(12)  # Mover el servo a la posición desbloqueada
     time.sleep(1)
     servo.ChangeDutyCycle(0)  # Detener el servo
@@ -228,7 +229,7 @@ def monitoreo_boton():
     """
     Hilo que monitorea las acciones del botón.
     """
-    global door_locked, servo_unlocked
+    global servo_unlocked
     last_pressed_time = 0
     debounce_time = 0.2
     while True:
@@ -254,9 +255,7 @@ def verificar_puerta():
     """
     Hilo que verifica continuamente el estado de la puerta.
     """
-    global door_locked
-    last_close_time = None
-    unlock_time = None
+    global door_locked, unlock_time
 
     while True:
         door_is_open = sensor_door_open()
@@ -264,21 +263,19 @@ def verificar_puerta():
         if door_is_open:
             with door_lock:
                 door_locked = False
-            last_close_time = None
-            unlock_time = None
+            unlock_time = None  # Reiniciar el tiempo de desbloqueo si la puerta se abre
         else:
             current_time = time.time()
 
-            if last_close_time is None:
-                last_close_time = current_time
-
-            if last_close_time is not None and not door_locked and current_time - last_close_time >= 5:
+            # Bloqueo automático si la puerta no se abre en 5 segundos tras desbloquear
+            if unlock_time is not None and not door_locked and current_time - unlock_time >= 5:
                 with door_lock:
                     bloquear_servo()
                     set_led_state(True, False, None)
-                    send_telegram_message("🔒 Caja bloqueada.")
+                    send_telegram_message("🔒 Caja bloqueada automáticamente tras desbloqueo sin apertura.")
                     door_locked = True
-                last_close_time = None
+                unlock_time = None  # Limpiar el tiempo de desbloqueo después de bloquear
+
         time.sleep(0.1)
 
 def actualizar_usuarios_periodicamente():

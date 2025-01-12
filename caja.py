@@ -255,52 +255,34 @@ def monitoreo_boton():
 def verificar_puerta():
     """
     Hilo que verifica continuamente el estado de la puerta.
-    Maneja dos casos:
-    1. Bloqueo automático tras desbloqueo si la puerta no se abre en 5 segundos.
-    2. Bloqueo automático si la puerta permanece cerrada durante 5 segundos tras cerrarse.
+    Bloquea automáticamente la puerta si:
+    - El servo está desbloqueado
+    - La puerta está cerrada
+    - Han pasado 5 segundos
     """
     global door_locked, unlock_time, servo_unlocked
-
-    time_since_closed = None  # Momento en que la puerta se detectó como cerrada
 
     while True:
         door_is_open = sensor_door_open()  # Verificar si la puerta está abierta
         current_time = time.time()
 
-        # Caso 1: Desbloqueo sin apertura
-        if servo_unlocked and not door_locked and unlock_time is not None:
-            if current_time - unlock_time >= 5:  # Han pasado 5 segundos desde el desbloqueo
+        # Evaluar si se cumplen las condiciones para bloquear
+        if servo_unlocked and not door_is_open and unlock_time is not None:
+            if current_time - unlock_time >= 5:  # Han pasado 5 segundos con la puerta cerrada
                 with door_lock:
                     bloquear_servo()
                     set_led_state(True, False, None)  # LED rojo encendido
-                    send_telegram_message("🔒 Caja bloqueada automáticamente tras desbloqueo sin apertura.")
+                    send_telegram_message("🔒 Caja bloqueada automáticamente después de permanecer cerrada 5 segundos.")
                     door_locked = True
-                    servo_unlocked = False
+                    servo_unlocked = False  # Actualizar el estado del servo
                     unlock_time = None  # Reiniciar el tiempo de desbloqueo
 
+        # Reiniciar el tiempo si la puerta está abierta
         if door_is_open:
-            # La puerta está abierta, reiniciar tiempos y estados
-            time_since_closed = None  # Reiniciar tiempo desde que la puerta se cerró
-            with door_lock:
-                door_locked = False  # Puerta no bloqueada
+            unlock_time = None  # Reiniciar el tiempo de desbloqueo
             set_led_state(False, True, None)  # LED verde encendido
-        else:
-            # La puerta está cerrada
-            if not door_locked and servo_unlocked:
-                if time_since_closed is None:
-                    time_since_closed = current_time  # Registrar el momento de cierre
-                elif current_time - time_since_closed >= 5:  # Han pasado 5 segundos cerrada
-                    with door_lock:
-                        bloquear_servo()
-                        set_led_state(True, False, None)  # LED rojo encendido
-                        send_telegram_message("🔒 Caja bloqueada automáticamente tras ser abierta.")
-                        door_locked = True
-                        servo_unlocked = False  # Actualizar estado del servo
 
         time.sleep(0.1)
-
-
-
 
 def actualizar_usuarios_periodicamente():
     """

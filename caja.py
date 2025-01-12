@@ -272,7 +272,7 @@ def verificar_puerta():
             lock_time = None
             continue
         else:
-            if empezar_cuenta=1:
+            if empezar_cuenta==1:
                 lock_time=time.time()
                 empezar_cuenta=0
             if current_time - lock_time >= 5:  # Han pasado 5 segundos con la puerta cerrada

@@ -27,7 +27,8 @@ SENSOR_MAGNETICO = 5
 
 # Configuración global
 TOLERANCE = 0.6  # Tolerancia para el reconocimiento facial
-
+lock_time = None
+empezar_cuenta=1
 door_locked = False  # Estado de bloqueo de la puerta
 servo_unlocked = False  # Indica si el servo está desbloqueado
 
@@ -199,13 +200,10 @@ def inicializar_estado():
     Inicializa el estado del sistema al iniciar.
     """
     set_led_state(False, False, False)
-    unlock_time=None
     if sensor_door_open():
         desbloquear_servo()
-        open=1
     else:
         bloquear_servo()
-        open=0
 
 def hilo_seguro(func, *args, **kwargs):
     """
@@ -263,7 +261,7 @@ def verificar_puerta():
     - La puerta está cerrada
     - Han pasado 5 segundos
     """
-    global door_locked, unlock_time, servo_unlocked, open
+    global door_locked, lock_time, servo_unlocked, empezar_cuenta
 
     while True:
         door_is_open = sensor_door_open()  # Verificar si la puerta está abierta
@@ -271,17 +269,18 @@ def verificar_puerta():
 
         # Reiniciar el tiempo si la puerta está abierta
         if door_is_open:
-            unlock_time = None  # Reiniciar el tiempo de desbloqueo
-            open=1
+            lock_time = None
+            continue
         else:
-            if open==1:
-                open=0
-                unlock_time=time.time()
-            if current_time - unlock_time >= 5:  # Han pasado 5 segundos con la puerta cerrada
+            if empezar_cuenta=1:
+                lock_time=time.time()
+                empezar_cuenta=0
+            if current_time - lock_time >= 5:  # Han pasado 5 segundos con la puerta cerrada
                 with door_lock:
                     bloquear_servo()
                     send_telegram_message("🔒 Caja bloqueada.")
-                    unlock_time = None  # Reiniciar el tiempo de desbloqueo
+                    lock_time = None  # Reiniciar el tiempo de desbloqueo
+                    empezar_cuenta=1
 
         time.sleep(0.1)
 

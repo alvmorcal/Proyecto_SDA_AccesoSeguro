@@ -170,7 +170,7 @@ def add_user():
                 # Enviar notificaciones
                 send_telegram_message(f"\ud83d\udc64 Usuario registrado: {unique_name}")
                 send_email(email, "Confirmación de Registro", f"Hola {unique_name}, ha sido dado de alta en la aplicación. Ya puede acceder al contenido de la caja de seguridad.")
-                flash(f'Hola {unique_name}, ha sido dado de alta en la aplicación. Ya puede acceder al contenido de la caja de seguridad.', 'success')
+                return {"status": "success", "message": f'El usuario ha sido dado de alta.'}, 200
             except sqlite3.IntegrityError:
                 flash(f'Error al registrar el usuario "{unique_name}".', 'danger')
             finally:
@@ -194,7 +194,7 @@ def delete_user_confirm():
         conn.close()
         send_telegram_message(f"\u274c Usuario eliminado: {username}")
         send_email(email, "Confirmación de Baja", f"Hola {username}, ha sido dado de baja de la base de datos. Ya no podrá acceder al contenido de la caja de seguridad.")
-        return {"status": "success", "message": f'Hola {username}, ha sido dado de baja de la base de datos. Ya no podrá acceder al contenido de la caja de seguridad.'}, 200
+        return {"status": "success", "message": f'El usuario ha sido dado de baja.'}, 200
     else:
         return {"status": "error", "message": "Clave de administrador incorrecta."}, 401
 

@@ -32,29 +32,30 @@ from email.mime.text import MIMEText
 # smtplib: Protocolo para enviar correos electrónicos.
 # MIMEText: Permite crear el contenido del correo electrónico en formato texto.
 
-# Configuración inicial de la aplicación Flask
-app = Flask(__name__)
-app.secret_key = 'clave_secreta_flask'  # Clave secreta para proteger sesiones y cookies.
-bcrypt = Bcrypt(app)  # Inicializamos Bcrypt para manejar contraseñas de forma segura.
+from dotenv import load_dotenv
+# dotenv: Carga variables de entorno desde un archivo .env.
 
-# Configuración de subida de archivos
-UPLOAD_FOLDER = 'uploads'
-ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
+# Cargar las variables de entorno desde el archivo .env
+load_dotenv()
+
+# Configuración sensible como variables de entorno
+app = Flask(__name__)
+app.secret_key = os.getenv('SECRET_KEY')  # Clave secreta para proteger sesiones y cookies.
+SMTP_SERVER = os.getenv('SMTP_SERVER')  # Servidor SMTP para enviar correos.
+SMTP_PORT = int(os.getenv('SMTP_PORT'))  # Puerto del servidor SMTP.
+SMTP_USER = os.getenv('SMTP_USER')  # Usuario para la autenticación del servidor SMTP.
+SMTP_PASSWORD = os.getenv('SMTP_PASSWORD')  # Contraseña del servidor SMTP.
+BOT_TOKEN = os.getenv('BOT_TOKEN')  # Token del bot de Telegram.
+CHAT_ID = os.getenv('CHAT_ID')  # ID del chat de Telegram para enviar notificaciones.
+
+bcrypt = Bcrypt(app)  # Inicializamos Bcrypt para manejar contraseñas de forma segura.
+UPLOAD_FOLDER = 'uploads'  # Carpeta donde se guardan los archivos subidos.
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}  # Extensiones permitidas para las imágenes.
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
-# Configuración del administrador
-ADMIN_USER = 'admin'
+# Credenciales de administrador
+ADMIN_USER = 'admin'  # Nombre de usuario del administrador.
 ADMIN_PASSWORD = bcrypt.generate_password_hash('admin').decode('utf-8')  # Contraseña encriptada.
-
-# Configuración SMTP para enviar correos electrónicos
-SMTP_SERVER = 'smtp.gmail.com'
-SMTP_PORT = 587
-SMTP_USER = 'acceso.seguro2025@gmail.com'
-SMTP_PASSWORD = 'deiwdbzxdaojmclp'
-
-# Configuración del bot de Telegram
-BOT_TOKEN = "7623844834:AAEh23cpLEIXKFJPcTwh-BCmsqZ6Cze6jew"
-CHAT_ID = "1882908107"
 
 # Función para enviar mensajes a Telegram
 def send_telegram_message(message):
@@ -92,7 +93,6 @@ def allowed_file(filename):
     """Comprueba si el archivo tiene una extensión válida."""
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-# Ruta para iniciar sesión
 @app.route('/', methods=['GET', 'POST'])
 def login():
     """Maneja la autenticación del administrador."""
@@ -107,7 +107,6 @@ def login():
             flash('Usuario o contraseña incorrectos.', 'danger')
     return render_template('login.html')
 
-# Ruta para mostrar el dashboard
 @app.route('/dashboard')
 def dashboard():
     """Muestra la lista de usuarios registrados."""
@@ -115,12 +114,11 @@ def dashboard():
         return redirect(url_for('login'))
     conn = connect_db()
     c = conn.cursor()
-    c.execute("SELECT name, email FROM users")
+    c.execute("SELECT name, email FROM users")  # Consulta todos los usuarios registrados.
     users = c.fetchall()
     conn.close()
     return render_template('dashboard.html', users=users)
 
-# Ruta para agregar usuarios
 @app.route('/add_user', methods=['GET', 'POST'])
 def add_user():
     """Permite registrar un nuevo usuario con imagen."""
@@ -138,6 +136,7 @@ def add_user():
         filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
         file.save(filepath)
 
+        # Cargar la imagen y obtener las codificaciones faciales
         image = face_recognition.load_image_file(filepath)
         face_encodings = face_recognition.face_encodings(image)
         if not face_encodings:
@@ -146,6 +145,7 @@ def add_user():
             encoding = face_encodings[0]
             conn = connect_db()
             c = conn.cursor()
+            # Verificar si el correo ya está registrado
             c.execute("SELECT name FROM users WHERE email = ?", (email,))
             if c.fetchone():
                 flash("Ya existe un usuario registrado con este correo.", "danger")
@@ -156,6 +156,7 @@ def add_user():
             unique_name = name
             counter = 1
             while True:
+                # Verificar si el nombre es único
                 c.execute("SELECT name FROM users WHERE name = ?", (unique_name,))
                 if not c.fetchone():
                     break
@@ -163,11 +164,13 @@ def add_user():
                 counter += 1
 
             try:
+                # Insertar el usuario en la base de datos
                 c.execute("INSERT INTO users (name, email, encoding) VALUES (?, ?, ?)", (unique_name, email, encoding.tobytes()))
                 conn.commit()
-                send_telegram_message(f"👤 Usuario registrado: {unique_name}")
-                send_email(email, "Confirmación de Registro", f"Hola {unique_name}, tu registro ha sido exitoso.")
-                flash(f'Usuario "{unique_name}" agregado correctamente.', 'success')
+                # Enviar notificaciones
+                send_telegram_message(f"\ud83d\udc64 Usuario registrado: {unique_name}")
+                send_email(email, "Confirmación de Registro", f"Hola {unique_name}, ha sido dado de alta en la aplicación. Ya puede acceder al contenido de la caja de seguridad.")
+                flash(f'Hola {unique_name}, ha sido dado de alta en la aplicación. Ya puede acceder al contenido de la caja de seguridad.', 'success')
             except sqlite3.IntegrityError:
                 flash(f'Error al registrar el usuario "{unique_name}".', 'danger')
             finally:
@@ -176,7 +179,6 @@ def add_user():
         return redirect(url_for('add_user'))
     return render_template('add_user.html')
 
-# Ruta para eliminar usuarios
 @app.route('/delete_user_confirm', methods=['POST'])
 def delete_user_confirm():
     """Elimina un usuario específico de la base de datos."""
@@ -187,32 +189,33 @@ def delete_user_confirm():
     if bcrypt.check_password_hash(ADMIN_PASSWORD, admin_password):
         conn = connect_db()
         c = conn.cursor()
-        c.execute("DELETE FROM users WHERE name = ?", (username,))
+        c.execute("DELETE FROM users WHERE name = ?", (username,))  # Elimina el usuario.
         conn.commit()
         conn.close()
-        send_telegram_message(f"❌ Usuario eliminado: {username}")
-        return {"status": "success", "message": f'Usuario "{username}" eliminado correctamente.'}, 200
+        send_telegram_message(f"\u274c Usuario eliminado: {username}")
+        return {"status": "success", "message": f'Hola {username}, ha sido dado de baja de la base de datos. Ya no podrá acceder al contenido de la caja de seguridad.'}, 200
     else:
         return {"status": "error", "message": "Clave de administrador incorrecta."}, 401
 
-# Ruta para cerrar sesión
 @app.route('/logout')
 def logout():
     """Cierra la sesión del administrador."""
     session['logged_in'] = False
     return redirect(url_for('login'))
 
-# Configuración inicial para base de datos y directorios
 if __name__ == '__main__':
+    # Configuración inicial para base de datos y directorios
     if not os.path.exists('users.db'):
         conn = connect_db()
         c = conn.cursor()
-        c.execute("CREATE TABLE users (name TEXT UNIQUE, email TEXT, encoding BLOB)")
+        c.execute("CREATE TABLE users (name TEXT UNIQUE, email TEXT, encoding BLOB)")  # Crear tabla para usuarios.
         conn.commit()
         conn.close()
     if not os.path.exists(UPLOAD_FOLDER):
-        os.makedirs(UPLOAD_FOLDER)
-    app.run(debug=True, host='0.0.0.0', port=5000)
+        os.makedirs(UPLOAD_FOLDER)  # Crear directorio para subir archivos si no existe.
+    app.run(debug=True, host='0.0.0.0', port=5000)  # Iniciar la aplicación en modo depuración.
+
+
 
 
 

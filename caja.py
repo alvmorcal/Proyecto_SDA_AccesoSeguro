@@ -272,6 +272,7 @@ def verificar_puerta():
         else:
             # La puerta está cerrada
             # Caso 1: La puerta no se abrió después de desbloquear
+            unlock_time=time.time()
             if unlock_time is not None and not door_locked and current_time - unlock_time >= 5:
                 with door_lock:
                     bloquear_servo()

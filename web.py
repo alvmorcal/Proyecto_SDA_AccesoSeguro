@@ -126,11 +126,10 @@ def add_user():
         file = request.files['file']
         if not name or not email or not file or not allowed_file(file.filename):
             return redirect(url_for('add_user'))
-
         filename = secure_filename(file.filename)
         filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
         file.save(filepath)
-
+        
         # Cargar la imagen y obtener las codificaciones faciales
         image = face_recognition.load_image_file(filepath)
         face_encodings = face_recognition.face_encodings(image)

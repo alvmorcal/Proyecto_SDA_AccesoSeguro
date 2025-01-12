@@ -193,6 +193,7 @@ def delete_user_confirm():
         conn.commit()
         conn.close()
         send_telegram_message(f"\u274c Usuario eliminado: {username}")
+        send_email(email, "Confirmación de Baja", f"Hola {username}, ha sido dado de baja de la base de datos. Ya no podrá acceder al contenido de la caja de seguridad.")
         return {"status": "success", "message": f'Hola {username}, ha sido dado de baja de la base de datos. Ya no podrá acceder al contenido de la caja de seguridad.'}, 200
     else:
         return {"status": "error", "message": "Clave de administrador incorrecta."}, 401

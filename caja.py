@@ -27,7 +27,6 @@ SENSOR_MAGNETICO = 5
 
 # Configuración global
 TOLERANCE = 0.6  # Tolerancia para el reconocimiento facial
-unlock_time = None
 
 door_locked = False  # Estado de bloqueo de la puerta
 servo_unlocked = False  # Indica si el servo está desbloqueado
@@ -105,12 +104,12 @@ def desbloquear_servo():
     """
     Desbloquea el servo motor.
     """
-    global servo_unlocked, unlock_time
+    global servo_unlocked
     servo_unlocked = True
-    unlock_time = time.time()  # Registrar el tiempo de desbloqueo
     servo.ChangeDutyCycle(12)  # Mover el servo a la posición desbloqueada
     time.sleep(1)
     servo.ChangeDutyCycle(0)  # Detener el servo
+    set_led_state(False, True, None)  # LED verde encendido
 
 def bloquear_servo():
     """
@@ -121,6 +120,7 @@ def bloquear_servo():
     servo.ChangeDutyCycle(7)  # Mover el servo a la posición bloqueada
     time.sleep(1)
     servo.ChangeDutyCycle(0)  # Detener el servo
+    set_led_state(True, False, None)  # LED verde encendido
 
 def activate_buzzer(duration=3):
     """
@@ -200,9 +200,9 @@ def inicializar_estado():
     """
     set_led_state(False, False, False)
     if sensor_door_open():
-        set_led_state(False, True, None)
+        desbloquear_servo()
     else:
-        set_led_state(True, False, None)
+        bloquear_servo()
 
 def hilo_seguro(func, *args, **kwargs):
     """
@@ -266,21 +266,19 @@ def verificar_puerta():
         door_is_open = sensor_door_open()  # Verificar si la puerta está abierta
         current_time = time.time()
 
-        # Evaluar si se cumplen las condiciones para bloquear
-        if servo_unlocked and not door_is_open and unlock_time is not None:
-            if current_time - unlock_time >= 5:  # Han pasado 5 segundos con la puerta cerrada
-                with door_lock:
-                    bloquear_servo()
-                    set_led_state(True, False, None)  # LED rojo encendido
-                    send_telegram_message("🔒 Caja bloqueada automáticamente después de permanecer cerrada 5 segundos.")
-                    door_locked = True
-                    servo_unlocked = False  # Actualizar el estado del servo
-                    unlock_time = None  # Reiniciar el tiempo de desbloqueo
-
         # Reiniciar el tiempo si la puerta está abierta
         if door_is_open:
             unlock_time = None  # Reiniciar el tiempo de desbloqueo
-            set_led_state(False, True, None)  # LED verde encendido
+            open=1
+        else:
+            if open==1
+                open=0
+                unlock_time=time.time()
+            if current_time - unlock_time >= 5:  # Han pasado 5 segundos con la puerta cerrada
+                with door_lock:
+                    bloquear_servo()
+                    send_telegram_message("🔒 Caja bloqueada.")
+                    unlock_time = None  # Reiniciar el tiempo de desbloqueo
 
         time.sleep(0.1)
 

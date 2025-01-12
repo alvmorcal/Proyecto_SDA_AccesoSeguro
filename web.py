@@ -167,10 +167,9 @@ def add_user():
                 # Insertar el usuario en la base de datos
                 c.execute("INSERT INTO users (name, email, encoding) VALUES (?, ?, ?)", (unique_name, email, encoding.tobytes()))
                 conn.commit()
-                # Enviar notificaciones
-                send_telegram_message(f"\ud83d\udc64 Usuario registrado: {unique_name}")
+                # Enviar notificación por correo
                 send_email(email, "Confirmación de Registro", f"Hola {unique_name}, ha sido dado de alta en la aplicación. Ya puede acceder al contenido de la caja de seguridad.")
-                flash(f'Hola {unique_name}, ha sido dado de alta en la aplicación. Ya puede acceder al contenido de la caja de seguridad.', 'success')
+                flash(f'Usuario "{unique_name}" agregado correctamente.', 'success')
             except sqlite3.IntegrityError:
                 flash(f'Error al registrar el usuario "{unique_name}".', 'danger')
             finally:
@@ -185,6 +184,7 @@ def delete_user_confirm():
     if not session.get('logged_in'):
         return redirect(url_for('login'))
     username = request.form['username']
+    email = request.form['email']  # Recibe el email del usuario a eliminar
     admin_password = request.form['admin_password']
     if bcrypt.check_password_hash(ADMIN_PASSWORD, admin_password):
         conn = connect_db()
@@ -192,8 +192,10 @@ def delete_user_confirm():
         c.execute("DELETE FROM users WHERE name = ?", (username,))  # Elimina el usuario.
         conn.commit()
         conn.close()
+        # Enviar notificación por correo al eliminar usuario
+        send_email(email, "Baja de Usuario", f"Hola {username}, ha sido dado de baja de la base de datos. Ya no podrá acceder al contenido de la caja de seguridad.")
         send_telegram_message(f"\u274c Usuario eliminado: {username}")
-        return {"status": "success", "message": f'Hola {username}, ha sido dado de baja de la base de datos. Ya no podrá acceder al contenido de la caja de seguridad.'}, 200
+        return {"status": "success", "message": f'Usuario "{username}" eliminado correctamente.'}, 200
     else:
         return {"status": "error", "message": "Clave de administrador incorrecta."}, 401
 
@@ -214,10 +216,6 @@ if __name__ == '__main__':
     if not os.path.exists(UPLOAD_FOLDER):
         os.makedirs(UPLOAD_FOLDER)  # Crear directorio para subir archivos si no existe.
     app.run(debug=True, host='0.0.0.0', port=5000)  # Iniciar la aplicación en modo depuración.
-
-
-
-
 
 
 

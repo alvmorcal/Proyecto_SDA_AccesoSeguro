@@ -268,12 +268,9 @@ def verificar_puerta():
         if door_is_open:
             # La puerta está abierta, reiniciar tiempos
             unlock_time = None  # Reiniciar el tiempo de desbloqueo
-            with door_lock:
-                door_locked = False  # La puerta no está bloqueada
             set_led_state(False, True, None)  # Encender LED verde
         else:
             # La puerta está cerrada
-
             # Caso 1: La puerta no se abrió después de desbloquear
             if unlock_time is not None and not door_locked and current_time - unlock_time >= 5:
                 with door_lock:

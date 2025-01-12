@@ -185,6 +185,7 @@ def delete_user_confirm():
     if not session.get('logged_in'):
         return redirect(url_for('login'))
     username = request.form['username']
+    email = request.form['email']
     admin_password = request.form['admin_password']
     if bcrypt.check_password_hash(ADMIN_PASSWORD, admin_password):
         conn = connect_db()

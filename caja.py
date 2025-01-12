@@ -270,7 +270,7 @@ def verificar_puerta():
         # Reiniciar el tiempo si la puerta está abierta
         if door_is_open:
             lock_time = None
-            continue
+            empezar_cuenta=1
         else:
             if empezar_cuenta==1:
                 lock_time=time.time()

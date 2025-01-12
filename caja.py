@@ -124,6 +124,7 @@ def verificar_puerta():
     global servo_unlocked
     while True:
         if not servo_unlocked:  # Si la puerta ya está bloqueada, no hace nada.
+            time.sleep(0.1)
             continue
 
         time.sleep(DOOR_UNLOCK_TIME)  # Espera tiempo para comprobar si se abrió.
@@ -131,6 +132,30 @@ def verificar_puerta():
             bloquear_servo()
             set_led_state(led_rojo=True, led_verde=False)
             send_telegram_message("🔒 Puerta bloqueada automáticamente tras inactividad.")
+
+def reconocimiento_facial(camera):
+    """Hilo para realizar reconocimiento facial."""
+    global users
+    while True:
+        if GPIO.input(SENSOR_PRESENCIA) == GPIO.HIGH:
+            with camera_lock:
+                frame = camera.capture_array()
+                rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                face_locations = face_recognition.face_locations(rgb_frame)
+                face_encodings = face_recognition.face_encodings(rgb_frame, face_locations)
+
+                for face_encoding in face_encodings:
+                    matches = face_recognition.compare_faces([user[1] for user in users], face_encoding, tolerance=TOLERANCE)
+                    if True in matches:
+                        name = users[matches.index(True)][0]
+                        set_led_state(led_blanco=True)
+                        send_telegram_message(f"✅ Acceso permitido para {name}")
+                        send_telegram_photo(frame, f"✅ Usuario reconocido: {name}")
+                        desbloquear_servo()
+                        time.sleep(5)  # Pausa antes de volver a procesar.
+        else:
+            set_led_state(led_blanco=False)
+        time.sleep(0.1)
 
 # Código principal
 if __name__ == "__main__":
@@ -146,8 +171,12 @@ if __name__ == "__main__":
     camera.configure(config)
     camera.start()
 
+    # Simula una base de datos cargada.
+    users = [("usuario1", np.random.rand(128)), ("usuario2", np.random.rand(128))]
+
     # Iniciar hilos.
     threading.Thread(target=verificar_puerta, daemon=True).start()
+    threading.Thread(target=reconocimiento_facial, args=(camera,), daemon=True).start()
 
     try:
         while True:
@@ -155,9 +184,3 @@ if __name__ == "__main__":
     except KeyboardInterrupt:
         print("Finalizando programa.")
         GPIO.cleanup()  # Limpia la configuración GPIO al finalizar.
-
-
-
-
-
-

@@ -101,7 +101,6 @@ def login():
         if username == ADMIN_USER and bcrypt.check_password_hash(ADMIN_PASSWORD, password):
             session['logged_in'] = True
             return redirect(url_for('dashboard'))
-        else:
     return render_template('login.html')
 
 @app.route('/dashboard')

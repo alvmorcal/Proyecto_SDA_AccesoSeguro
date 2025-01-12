@@ -255,30 +255,37 @@ def verificar_puerta():
     """
     Hilo que verifica continuamente el estado de la puerta.
     Maneja dos casos:
-    1. Bloqueo automático tras desbloqueo si la puerta no se abre en 5 segundos.
-    2. Bloqueo automático si la puerta permanece cerrada durante 5 segundos tras cerrarse.
+    1. Bloqueo automático tras desbloqueo si la puerta permanece cerrada por 5 segundos.
     """
-    global door_locked, unlock_time
+    global door_locked, unlock_time, servo_unlocked
+
+    time_since_closed = None  # Momento en que la puerta se detectó como cerrada
 
     while True:
         door_is_open = sensor_door_open()  # Verificar si la puerta está abierta
         current_time = time.time()
 
         if door_is_open:
-            # La puerta está abierta, reiniciar tiempos
-            unlock_time = None  # Reiniciar el tiempo de desbloqueo
-            set_led_state(False, True, None)  # Encender LED verde
+            # La puerta está abierta, reiniciar tiempos y estados
+            time_since_closed = None  # Reiniciar tiempo desde que la puerta se cerró
+            with door_lock:
+                door_locked = False  # Puerta no bloqueada
+            set_led_state(False, True, None)  # LED verde encendido
         else:
             # La puerta está cerrada
-            unlock_time=time.time()
-            if not door_locked and current_time - unlock_time >= 5:
-                with door_lock:
-                    bloquear_servo()
-                    set_led_state(True, False, None)  # Encender LED rojo
-                    send_telegram_message("🔒 Caja bloqueada.")
-                    door_locked = True
+            if not door_locked and servo_unlocked:
+                if time_since_closed is None:
+                    time_since_closed = current_time  # Registrar el momento de cierre
+                elif current_time - time_since_closed >= 5:
+                    with door_lock:
+                        bloquear_servo()  # Bloquear servo
+                        set_led_state(True, False, None)  # LED rojo encendido
+                        send_telegram_message("🔒 Caja bloqueada automáticamente tras permanecer cerrada 5 segundos.")
+                        door_locked = True
+                        servo_unlocked = False  # Actualizar estado del servo
 
         time.sleep(0.1)
+
 
 
 def actualizar_usuarios_periodicamente():

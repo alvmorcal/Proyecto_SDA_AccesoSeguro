@@ -135,6 +135,7 @@ def add_user():
         image = face_recognition.load_image_file(filepath)
         face_encodings = face_recognition.face_encodings(image)
         if not face_encodings:
+            return redirect(url_for('add_user'))
         else:
             encoding = face_encodings[0]
             conn = connect_db()

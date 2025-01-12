@@ -156,7 +156,6 @@ def add_user():
                     break
                 unique_name = f"{name}_{str(counter).zfill(3)}"
                 counter += 1
-
             try:
                 # Insertar el usuario en la base de datos
                 c.execute("INSERT INTO users (name, email, encoding) VALUES (?, ?, ?)", (unique_name, email, encoding.tobytes()))
@@ -165,6 +164,7 @@ def add_user():
                 send_telegram_message(f"\ud83d\udc64 Usuario registrado: {unique_name}")
                 send_email(email, "Confirmación de Registro", f"Hola {unique_name}, ha sido dado de alta en la aplicación. Ya puede acceder al contenido de la caja de seguridad.")
             except sqlite3.IntegrityError:
+                
             finally:
                 conn.close()
         os.remove(filepath)

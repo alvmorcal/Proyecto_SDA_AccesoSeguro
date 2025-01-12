@@ -27,6 +27,7 @@ SENSOR_MAGNETICO = 5
 
 # Configuración global
 TOLERANCE = 0.6  # Tolerancia para el reconocimiento facial
+unlock_time = None
 
 door_locked = False  # Estado de bloqueo de la puerta
 servo_unlocked = False  # Indica si el servo está desbloqueado

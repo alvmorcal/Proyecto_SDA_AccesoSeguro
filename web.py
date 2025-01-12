@@ -50,7 +50,7 @@ ADMIN_PASSWORD = bcrypt.generate_password_hash('admin').decode('utf-8')  # Contr
 SMTP_SERVER = 'acceso.seguro2025.gmail.com'
 SMTP_PORT = 587
 SMTP_USER = 'acceso.seguro2025.gmail.com'
-SMTP_PASSWORD = 'admin2025'
+SMTP_PASSWORD = '5974 5121'
 
 # Configuración del bot de Telegram
 BOT_TOKEN = "7623844834:AAEh23cpLEIXKFJPcTwh-BCmsqZ6Cze6jew"

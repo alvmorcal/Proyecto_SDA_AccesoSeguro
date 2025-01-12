@@ -107,7 +107,6 @@ def desbloquear_servo():
     """
     global servo_unlocked, unlock_time
     servo_unlocked = True
-    unlock_time = time.time()  # Registrar el tiempo de desbloqueo
     servo.ChangeDutyCycle(12)  # Mover el servo a la posición desbloqueada
     time.sleep(1)
     servo.ChangeDutyCycle(0)  # Detener el servo
@@ -271,22 +270,12 @@ def verificar_puerta():
             set_led_state(False, True, None)  # Encender LED verde
         else:
             # La puerta está cerrada
-            # Caso 1: La puerta no se abrió después de desbloquear
             unlock_time=time.time()
-            if unlock_time is not None and not door_locked and current_time - unlock_time >= 5:
-                with door_lock:
-                    bloquear_servo()
-                    set_led_state(True, False, None)  # Encender LED rojo
-                    send_telegram_message("🔒 Caja bloqueada automáticamente tras desbloqueo sin apertura.")
-                    door_locked = True
-                unlock_time = None  # Limpiar el tiempo de desbloqueo
-
-            # Caso 2: La puerta se cerró y permaneció cerrada durante 5 segundos
             if not door_locked and current_time - unlock_time >= 5:
                 with door_lock:
                     bloquear_servo()
                     set_led_state(True, False, None)  # Encender LED rojo
-                    send_telegram_message("🔒 Caja bloqueada automáticamente tras cierre manual.")
+                    send_telegram_message("🔒 Caja bloqueada.")
                     door_locked = True
 
         time.sleep(0.1)

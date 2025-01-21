@@ -8,8 +8,8 @@ from time import sleep
 import libcamera
 
 # Configuracion global
-BOT_TOKEN = "7623844834:AAEh23cpLEIXKFJPcTwh-BCmsqZ6Cze6jew"
-CHAT_ID = "1882908107"
+BOT_TOKEN = "XXX"
+CHAT_ID = "YYY"
 RESOLUTION = (640, 480)
 TOLERANCE = 0.6
 REFRESH_INTERVAL = 30  # Intervalo de tiempo para refrescar usuarios (en segundos)

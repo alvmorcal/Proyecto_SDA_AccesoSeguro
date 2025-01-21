@@ -8,8 +8,8 @@ import libcamera
 import requests
 
 # CONFIGURACION TELEGRAM
-BOT_TOKEN = "7623844834:AAEh23cpLEIXKFJPcTwh-BCmsqZ6Cze6jew"  # Reemplaza con tu TOKEN
-CHAT_ID = "1882908107"  # Reemplaza con tu Chat ID
+BOT_TOKEN = "XXX"  # Reemplaza con tu TOKEN
+CHAT_ID = "YYY"  # Reemplaza con tu Chat ID
 
 # Funcion para enviar notificaciones por Telegram
 def send_telegram_message(message):
